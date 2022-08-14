@@ -14,6 +14,7 @@ colorama==0.4.5
 discord==1.7.3
 discord.py==1.7.3
 fastapi==0.79.0
+h11==0.13.0
 idna==3.3
 multidict==6.0.2
 mypy-extensions==0.4.3
@@ -35,4 +36,5 @@ starlette==0.19.1
 tomli==2.0.1
 typing_extensions==4.3.0
 urllib3==1.26.11
+uvicorn==0.18.2
 yarl==1.8.1

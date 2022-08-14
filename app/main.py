@@ -3,11 +3,27 @@ from fastapi import FastAPI
 from schemas import BetSchema, UserSchema, ResponseSchema
 from helpers import check_player_balance
 from objects import Game, Bet
+from fastapi.middleware.cors import CORSMiddleware
+
 
 game = Game()
 app = FastAPI()
 
 # TODO make SCHEMAS for all payloads **in progress**
+origins = [
+    "http://localhost.tiangolo.com",
+    "https://localhost.tiangolo.com",
+    "http://localhost",
+    "http://localhost:8080",
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 @app.get(
