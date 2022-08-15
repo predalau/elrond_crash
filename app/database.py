@@ -20,6 +20,7 @@ class GameHistory:
         else:
             schema = self.map["game_history"]
             df = pd.DataFrame.from_dict(schema)
+            df.to_csv(self.history_path)
             return df
 
     def get_last_multipliers(self):
@@ -35,7 +36,7 @@ class GameHistory:
         if self.game_history.empty:
             bets = []
         else:
-            bets = self.game_history.loc[-1]["bets_won"]
+            bets = self.game_history["bets"].values[-1]
 
         cols = {
             "address": "walletAddress",
@@ -44,11 +45,12 @@ class GameHistory:
             "hasWon": "hasWon",
         }
         parsed_bets = []
-
+        print(bets)
+        print(type(bets))
         for bet in bets:
             dic = {}
             for col in cols.keys():
-                dic.update({cols[col]: bet[col]})
+                dic.update({col: bet[col]})
 
             parsed_bets.append(dic)
 

@@ -83,7 +83,32 @@ def check_balance(
     return payload["status"]
 
 
+@app.get("/endBetsTimestamp")
+def get_end_bets_ts():
+    return game.end_bets
+
+
+@app.get("/gameOverTimestamp")
+def get_end_game_ts():
+    return game.end_game
+
+
 @app.post("/placeBet")
 def place_bet(data: BetSchema):
     bet = Bet(data.walletAddress, data.betAmount)
     game.add_bet(bet)
+
+
+@app.post("/cashout")
+def cashout(data):
+    game.cashout(data.walletAddress)
+
+
+@app.post("/gameOver")
+def end_game():
+    global game
+    game.end_game()
+    game = Game()
+
+
+# game.new_game()
