@@ -19,15 +19,6 @@ class Bet:
         self.hasWon = False
         self.profit = 0
 
-    def cashout(self, multiplier):
-        if isinstance(multiplier, float):
-            profit = self.amount * multiplier
-
-            setattr(self, "multiplier", multiplier)
-            setattr(self, "status", "closed")
-            setattr(self, "hasWon", True)
-            setattr(self, "profit", profit)
-
     def to_dict(self):
         cols = [
             "timestamp",
@@ -53,7 +44,7 @@ class Game:
         self.identifier = self._get_id()
         self.set_next_hash_and_mult()
         self.state = "betting"
-        self.house = STARTING_WALLET_AMT
+        self.house = self.get_house_balance()
         self.bets = []
         self.start_time = datetime.now()
         self.end_bets = self.start_time + timedelta(minutes=1)
@@ -64,18 +55,29 @@ class Game:
         if self.data.game_history.empty:
             return 0
         else:
+            print(self.data.game_history)
             gameid = self.data.game_history["identifier"].values[-1] + 1
         return gameid
 
-    def cashout(self, wallet):
-        for bet in self.bets:
-            if self.state != "ended":
-                if bet["address"] == wallet:
-                    profit = bet["amount"] * self.multiplier
-                    bet.update({"profit": profit})
-            else:
-                profit = -1 * bet["amount"]
-                bet.update({"profit": profit})
+    def get_house_balance(self):
+        if self.data.game_history.empty:
+            balance = STARTING_WALLET_AMT
+        else:
+            balance = self.data.game_history["house"].values[-1]
+        return balance
+
+    def cashout(self, wallet, mult):
+        bets = self.bets
+        for bet in bets:
+            if bet["address"] == wallet:
+                if self.state != "ended":
+                    profit = bet["amount"] * mult
+                    bet.update({"hasWon": True})
+                    bet.update({"profit": profit, "status": "closed"})
+                else:
+                    profit = -1 * bet["amount"]
+                    bet.update({"profit": profit, "status": "closed"})
+        setattr(self, "bets", bets)
 
     def set_next_hash_and_mult(self):
         def get_result(game_hash):
@@ -104,6 +106,7 @@ class Game:
     def end_game(self):
         # identifier, timestamp, pool_size, multiplier,
         # bets_won, house_profit, house_balance
+        setattr(self, "state", "ended")
         pool_size = 0
         for bet in self.bets:
             pool_size += bet["amount"]
@@ -117,17 +120,25 @@ class Game:
                 losers.append(bet)
 
         for bet in losers:
-            self.cashout(bet["address"])
+            self.cashout(bet["address"], 0.0)
 
         house_profits = pool_size - player_profits
 
         setattr(self, "timestamp", self.end_game_ts)
         setattr(self, "house_profit", house_profits)
+        setattr(self, "pool_size", pool_size)
         setattr(self, "house", self.house + house_profits)
-        new_col = pd.DataFrame(self.to_dict())
-        df = self.data.game_history.append(new_col)
-        print(df)
-        df.to_csv(self.data.history_path, index=False)
+        new_col = self.get_df_payload()
+
+        print(new_col)
+        df = pd.concat([self.data.game_history, new_col], ignore_index=True)
+        df.to_csv(self.data.history_path)
+
+    def get_df_payload(self):
+        dic = self.to_dict()
+        dic.update({"bets": list(dic["bets"])})
+        df = pd.DataFrame(dic)
+        return df
 
     def to_dict(self):
         cols = self.data.map["game_history"].keys()

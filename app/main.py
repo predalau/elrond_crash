@@ -29,17 +29,17 @@ def get_current_bets() -> List[BetSchema]:
     """
     Get current bets from the SC
     """
-    bets = []
+    bets = game.bets
     schema = {
+        "timestamp": "timestamp",
         "address": "walletAddress",
         "amount": "betAmount",
         "hasWon": "hasWon",
+        "multiplier": "multiplier",
+        "status": "status",
         "profit": "profit",
     }
-    for bet in game.bets:
-        if bet["status"] == "open":
-            bets.append(bet)
-
+    print(bets)
     for bet in bets:
         for elem in schema.keys():
             if elem in bet.keys():
@@ -100,8 +100,8 @@ def place_bet(data: BetSchema):
 
 
 @app.post("/cashout")
-def cashout(data):
-    game.cashout(data.walletAddress)
+def cashout(address: str, multiplier: float):
+    game.cashout(address, multiplier)
 
 
 @app.post("/gameOver")

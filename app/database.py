@@ -20,7 +20,7 @@ class GameHistory:
         else:
             schema = self.map["game_history"]
             df = pd.DataFrame.from_dict(schema)
-            df.to_csv(self.history_path)
+            df.to_csv(self.history_path, index=False)
             return df
 
     def get_last_multipliers(self):
@@ -28,7 +28,7 @@ class GameHistory:
             if len(self.game_history["multiplier"].values) < 10:
                 return self.game_history["multiplier"].values
             else:
-                return self.df.loc[-10:]["multiplier"].values
+                return self.game_history.loc[-10:]["multiplier"].values
         else:
             return []
 
