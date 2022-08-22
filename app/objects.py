@@ -128,16 +128,28 @@ class Game:
         setattr(self, "house_profit", house_profits)
         setattr(self, "pool_size", pool_size)
         setattr(self, "house", self.house + house_profits)
-        new_col = self.get_df_payload()
 
-        print(new_col)
+        self.save_game_history()
+        self.save_bets_history()
+
+    def save_game_history(self):
+        new_col = self.get_history_payload()
         df = pd.concat([self.data.game_history, new_col], ignore_index=True)
-        df.to_csv(self.data.history_path)
+        print("Saving history: ")
+        print(df.head())
+        df.to_csv(self.data.history_path, index=False)
 
-    def get_df_payload(self):
+    def save_bets_history(self):
+        new_rows = pd.DataFrame(self.bets)
+        df = pd.concat([self.data.bet_history, new_rows], ignore_index=True)
+        print("Saving bets: ")
+        print(df.head())
+        df.to_csv(self.data.bets_path, index=False)
+
+    def get_history_payload(self):
         dic = self.to_dict()
-        dic.update({"bets": list(dic["bets"])})
-        df = pd.DataFrame(dic)
+        print(dic)
+        df = pd.DataFrame([dic])
         return df
 
     def to_dict(self):
@@ -154,6 +166,8 @@ class Game:
 
     def add_bet(self, bet: Bet):
         new_bets = self.bets
-        new_bets.append(bet.to_dict())
+        new_bet = bet.to_dict()
+        new_bet.update({"hash": self.hash})
+        new_bets.append(new_bet)
         print(new_bets)
         setattr(self, "bets", new_bets)

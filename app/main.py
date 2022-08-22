@@ -51,9 +51,9 @@ def get_current_bets() -> List[BetSchema]:
 @app.get(
     "/lastBets",
     tags=["bets"],
-    response_model=List[BetSchema],
+    response_model=List[Dict],
 )
-def get_last_bets() -> List[BetSchema]:
+def get_last_bets() -> List[Dict]:
     bets = game.data.get_last_game_bets()
     payload = {
         "bets": bets,
@@ -65,11 +65,12 @@ def get_last_bets() -> List[BetSchema]:
 @app.get(
     "/getLastTenMultipliers",
     tags=["history"],
-    response_model=List[float],
+    response_model=List,
 )
-def get_last_ten_multipliers() -> List[float]:
-    payload = {"lastMultipliers": game.data.get_last_multipliers()}
-    return payload["lastMultipliers"]
+def get_last_ten_multipliers():
+    multipliers = game.data.get_last_multipliers()
+    print(multipliers)
+    return multipliers
 
 
 @app.get("/checkPlayerBalance/{walletAddress}/{balance}/{signer}")
