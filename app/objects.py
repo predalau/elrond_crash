@@ -16,7 +16,7 @@ class Bet:
         self.timestamp = datetime.now().isoformat()
         self.multiplier = 0
         self.status = "open"
-        self.hasWon = False
+        self.haswon = False
         self.profit = 0
 
     def to_dict(self):
@@ -24,7 +24,7 @@ class Bet:
             "timestamp",
             "address",
             "amount",
-            "hasWon",
+            "haswon",
             "multiplier",
             "status",
             "profit",
@@ -44,7 +44,7 @@ class Game:
         self.identifier = self._get_id()
         self.set_next_hash_and_mult()
         self.state = "betting"
-        self.house = self.get_house_balance()
+        self.house_balance = self.get_house_balance()
         self.bets = []
         self.start_time = datetime.now()
         self.end_bets = self.start_time + timedelta(minutes=1)
@@ -56,14 +56,14 @@ class Game:
             return 0
         else:
             print(self.data.game_history)
-            gameid = self.data.game_history["identifier"].values[-1] + 1
+            gameid = self.data.game_history["id"].values[-1] + 1
         return gameid
 
     def get_house_balance(self):
         if self.data.game_history.empty:
             balance = STARTING_WALLET_AMT
         else:
-            balance = self.data.game_history["house"].values[-1]
+            balance = self.data.game_history["house_balance"].values[-1]
         return balance
 
     def cashout(self, wallet, mult):
@@ -72,7 +72,7 @@ class Game:
             if bet["address"] == wallet:
                 if self.state != "ended":
                     profit = bet["amount"] * mult
-                    bet.update({"hasWon": True})
+                    bet.update({"haswon": True})
                     bet.update({"profit": profit, "status": "closed"})
                 else:
                     profit = -1 * bet["amount"]
@@ -114,7 +114,7 @@ class Game:
         player_profits = 0
         losers = []
         for bet in self.bets:
-            if bet["hasWon"]:
+            if bet["haswon"]:
                 player_profits += bet["amount"]
             else:
                 losers.append(bet)
@@ -127,38 +127,58 @@ class Game:
         setattr(self, "timestamp", self.end_game_ts)
         setattr(self, "house_profit", house_profits)
         setattr(self, "pool_size", pool_size)
-        setattr(self, "house", self.house + house_profits)
+        setattr(self, "house_balance", self.house_balance + house_profits)
 
         self.save_game_history()
         self.save_bets_history()
 
     def save_game_history(self):
-        new_col = self.get_history_payload()
-        df = pd.concat([self.data.game_history, new_col], ignore_index=True)
         print("Saving history: ")
-        print(df.head())
-        df.to_csv(self.data.history_path, index=False)
+        self.data.db.add_row("games", self.to_tuple())
 
     def save_bets_history(self):
-        new_rows = pd.DataFrame(self.bets)
-        df = pd.concat([self.data.bet_history, new_rows], ignore_index=True)
         print("Saving bets: ")
-        print(df.head())
-        df.to_csv(self.data.bets_path, index=False)
-
-    def get_history_payload(self):
-        dic = self.to_dict()
-        print(dic)
-        df = pd.DataFrame([dic])
-        return df
+        bets = self.bets_to_list_of_tuples()
+        for elem in bets:
+            self.data.db.add_row("bets", elem)
 
     def to_dict(self):
-        cols = self.data.map["game_history"].keys()
+        cols = self.data.map["games"].keys()
         dic = {}
         for col in cols:
             if hasattr(self, col):
                 dic.update({col: getattr(self, col)})
         return dic
+
+    def to_tuple(
+        self,
+    ):
+        cols = self.data.map["games"].keys()
+        dic = []
+        for col in cols:
+            if hasattr(self, col):
+                if col == "timestamp":
+                    dic.append(getattr(self, col).isoformat())
+                else:
+                    dic.append(getattr(self, col))
+        return tuple(dic)
+
+    def bets_to_list_of_tuples(
+        self,
+    ):
+        cols = self.data.map["bets"].keys()
+        final = []
+        for elem in self.bets:
+            dic = []
+            for col in cols:
+                if col in elem.keys():
+                    if col == "timestamp":
+                        dic.append(elem[col])
+                    else:
+                        dic.append(elem[col])
+
+            final.append(tuple(dic))
+        return final
 
     def add_field(self, dic):
         for key in dic.keys:

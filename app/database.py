@@ -1,7 +1,161 @@
 from time import time
 from vars import DATABASE_PATH, DATABASE_MAP, BETS_PATH
+import psycopg2
 import pandas as pd
 import os
+
+
+class ElrondCrashDatabase:
+    """docstring for ElrondDatabase"""
+
+    def __init__(self):
+        self.db_name = DATABASE_PATH
+        self.map = DATABASE_MAP
+        self.conn = self._connect()
+        self.cur = self.conn.cursor()
+        # self.last_rows = self.get_last_rows()
+
+    def _connect(self):
+        """
+        Function connects to db and returns connection object
+
+        Returns:
+        psycopg2 connection obj
+        """
+        conn = psycopg2.connect(
+            host="localhost",
+            database=self.db_name,
+            user="postgres",
+            password="Marele97",
+        )
+        return conn
+
+    def create_table(self, table: str, cols: list, pkey=False):
+        """
+        Function that creates a table in the 'elrond.db' Database
+
+        Params:
+        table (str): e.x. 'deadrare_coll_stats'
+        cols (list of dict): List of dicts containing name and
+            dtype of the table' columns
+
+        Returns:
+        None
+        """
+        sql = f"""CREATE TABLE IF NOT EXISTS {table}("""
+
+        if pkey:
+            unique_str = "PRIMARY KEY"
+        else:
+            unique_str = ""
+
+        for i, elem in enumerate(cols):
+            if i == 0:
+                sql += f"{elem['name']} {elem['dtype']}{unique_str},"
+            elif i == len(cols) - 1:
+                sql += f"{elem['name']} {elem['dtype']});"
+            else:
+                sql += f"{elem['name']} {elem['dtype']},"
+        print(sql)
+        self.cur.execute(sql)
+        res = self.conn.commit()
+        print(res)
+
+    def execute(self, sql):
+        """
+        Execute SQL query in the 'elrond.db' Database
+
+        Params:
+        sql (str): The SQL query
+
+        Returns:
+        list
+        """
+        self.cur.execute(sql)
+        self.conn.commit()
+        return self.cur.fetchall()
+
+    def add_row(self, table, data):
+        """
+        Function add a row in a specified table within
+        the 'elrond.db' Database
+
+        Params:
+        table (str): the name of the table to append to
+        data (tuple): tuple of all the values of the row
+
+        Returns:
+        None
+        """
+        print(f"Adding row to '{table}': ", data)
+        sql = f"""INSERT INTO {table} VALUES {str(data)};"""
+        self.cur.execute(sql)
+        self.conn.commit()
+
+    def remove_by(self, table, condition):
+        """
+        Function removes item/s from a table in 'elrond.db'
+        based on a criteria. Ex: DELETE FROM table WHERE id=0;
+
+        Params:
+        table (str): the name of the tableto remove from
+        condition (str): The contition
+
+        Returns:
+        None
+        """
+        self.cur.execute(f"DELETE FROM {table} where {condition};")
+        self.conn.commit()
+
+    def get_by_condition(self, table, condition):
+        """
+        Function add a row in a specified table within
+        the 'elrond.db' Database
+
+        Params:
+        table (str): the name of the table to append to
+        data (tuple): tuple of all the values of the row
+
+        Returns:
+        None
+        """
+        sql = f"""SELECT * FROM {table} where {condition};"""
+        self.cur.execute(sql)
+        self.conn.commit()
+        return self.cur.fetchall()
+
+    def get_table(self, table):
+        """
+        Function returns a pandas DataFrame of a table in
+        'elrond.db'
+
+        Params:
+        table (str): the name of the table
+
+        """
+        df = pd.read_sql_query(
+            f"SELECT * FROM {table}",
+            self.conn,
+        )
+        return df
+
+    def get_last_rows(self):
+        dic = {}
+        for table in self.map.keys():
+            sql = f"""SELECT * FROM {table} ORDER BY id DESC LIMIT 1;"""
+            row = self.execute(sql)
+
+            if row:
+                dic.update({table: row[0]})
+            else:
+                dic.update({table: (-1,)})
+
+        return dic
+
+    def get_column(self, table, column):
+        sql = f"""SELECT {column} from {table};"""
+        column = self.execute(sql)
+        return column
 
 
 class GameHistory:
@@ -10,30 +164,20 @@ class GameHistory:
     def __init__(self):
         self.map = DATABASE_MAP
         self.history_path = DATABASE_PATH
+        self.db = ElrondCrashDatabase()
         self.bets_path = BETS_PATH
         self.game_history = self._import_game_history()
         self.bet_history = self._import_bet_history()
         self.last_ten_multipliers = self.get_last_multipliers()
 
     def _import_game_history(self):
-        if os.path.isfile(self.history_path):
-            df = pd.read_csv(self.history_path)
-            return df
-        else:
-            schema = self.map["game_history"]
-            df = pd.DataFrame.from_dict(schema)
-            df.to_csv(self.history_path, index=False)
-            return df
+        df = self.db.get_table("games")
+        return df
 
     def _import_bet_history(self):
-        if os.path.isfile(self.bets_path):
-            df = pd.read_csv(self.bets_path)
-            return df
-        else:
-            schema = self.map["bet_history"]
-            df = pd.DataFrame.from_dict(schema)
-            df.to_csv(self.bets_path, index=False)
-            return df
+        df = self.db.get_table("bets")
+        print(df)
+        return df
 
     def get_last_multipliers(self):
         if hasattr(self, "game_history") and not self.game_history.empty:
@@ -49,8 +193,9 @@ class GameHistory:
     def get_last_game_bets(self):
         if self.bet_history.empty:
             bets = []
+            return bets
         else:
-            hashish = self.game_history.hash.values[-1]
+            hashish = self.bet_history["hash"].values[-1]
             print(hashish)
             bets = self.bet_history[self.bet_history["hash"] == hashish]
 
@@ -58,11 +203,12 @@ class GameHistory:
             "address": "walletAddress",
             "amount": "betAmount",
             "profit": "profit",
-            "hasWon": "hasWon",
+            "haswon": "haswon",
         }
         parsed_bets = []
         print(bets)
-        print(type(bets))
+        print(bets.columns)
+
         for i, bet in bets.iterrows():
             dic = {}
             for col in cols.keys():
@@ -77,13 +223,14 @@ class GameHistory:
         timestamp = time.now()
         game.update(
             {
-                "id": last_game_id,
+                "id": last_game_id + 1,
                 "timestamp": timestamp,
             }
         )
         new_history = self.game_history.append([game])
-        self._update_history(new_history)
+        setattr(self, "game_history", new_history)
+        new_row = tuple(game.values())
+        self._update_game_history(new_row)
 
-    def _update_history(self, new_history):
-        setattr("game_history", new_history)
-        pd.to_csv(self.history_path)
+    def _update_game_history(self, new_row):
+        self.db.add_row("games", new_row)
