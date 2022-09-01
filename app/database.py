@@ -1,5 +1,13 @@
 from time import time
-from vars import DATABASE_PATH, DATABASE_MAP, BETS_PATH
+from vars import (
+    DATABASE_PATH,
+    DATABASE_MAP,
+    BETS_PATH,
+    DB_HOST,
+    DB_PORT,
+    DB_USER,
+    DB_PASS,
+)
 import psycopg2
 import pandas as pd
 import os
@@ -23,10 +31,11 @@ class ElrondCrashDatabase:
         psycopg2 connection obj
         """
         conn = psycopg2.connect(
-            host="localhost",
+            host=DB_HOST,
+            port=DB_PORT,
             database=self.db_name,
-            user="postgres",
-            password="Marele97",
+            user=DB_USER,
+            password=DB_PASS,
         )
         return conn
 

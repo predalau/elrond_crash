@@ -8,6 +8,10 @@ DATABASE_PATH = "elrond_crash"
 BETS_PATH = "bets.csv"
 STARTING_WALLET_AMT = 100
 SALT_HASH = os.getenv("HASH")
+DB_HOST = os.getenv("DB_HOST")
+DB_PORT = int(os.getenv("DB_PORT"))
+DB_PASS = os.getenv("DB_PASS")
+DB_USER = os.getenv("DB_USER")
 DATABASE_MAP = {
     "games": {
         "identifier": [],
