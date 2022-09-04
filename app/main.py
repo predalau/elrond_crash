@@ -104,6 +104,6 @@ def end_game():
         game.end_game()
         game = Game()
     except psycopg2.InterfaceError:
-        game.data._connect()
+        game.data.db._connect()
         game.end_game()
         game = Game()
