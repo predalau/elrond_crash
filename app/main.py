@@ -43,7 +43,7 @@ def get_current_bets() -> List[BetSchema]:
     print(bets)
     for bet in bets:
         for elem in schema.keys():
-            if elem in bet.keys():
+            if elem in bet.keys() and bet.status != "closed":
                 bet.update({schema[elem]: bet[elem]})
 
     return bets
