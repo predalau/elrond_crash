@@ -85,6 +85,11 @@ def check_balance(
     return payload["status"]
 
 
+@app.get("/isGameOver")
+async def is_game_over():
+    await game.is_game_over()
+
+
 @app.get("/endBetsTimestamp")
 def get_end_bets_ts():
     return game.end_bets
@@ -116,6 +121,3 @@ def end_game():
         game.data._connect()
         game.end_game()
         game = Game()
-
-
-# game.new_game()

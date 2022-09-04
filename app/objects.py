@@ -5,6 +5,7 @@ import hashlib
 import random
 import hmac
 import pandas as pd
+import asyncio
 
 
 class Bet:
@@ -102,6 +103,9 @@ class Game:
         setattr(self, "hash", hashish)
         setattr(self, "multiplier", multiplier)
         return (hashish, multiplier)
+
+    async def is_game_over(self):
+        await asyncio.sleep(3)
 
     def end_game(self):
         # identifier, timestamp, pool_size, multiplier,
