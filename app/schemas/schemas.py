@@ -7,6 +7,11 @@ class Bet(BaseModel):
     betAmount: float = Field(None, title="Bet Amount in EGLD")
 
 
+class CashoutBet(BaseModel):
+    walletAddress: str = Field(None, title="erd...", min_length=62, max_length=62)
+    multiplier: float = Field(None, title="Bet Amount in EGLD")
+
+
 class User(BaseModel):
     walletAddress: str = Field(None, title="erd...", min_length=62, max_length=62)
     balance: Optional[float] = Field(None, title="The amount of EGLD available")

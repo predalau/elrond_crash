@@ -1,7 +1,7 @@
 import psycopg2
 from typing import Union, Dict, List
 from fastapi import FastAPI
-from schemas import BetSchema, UserSchema, ResponseSchema
+from schemas import BetSchema, UserSchema, ResponseSchema, CashoutBet
 from helpers import check_player_balance
 from objects import Game, Bet
 from fastapi.middleware.cors import CORSMiddleware
@@ -107,8 +107,8 @@ def place_bet(data: BetSchema):
 
 
 @app.post("/cashout")
-def cashout(address: str, multiplier: float):
-    game.cashout(address, multiplier)
+def cashout(data: CashoutBet):
+    return game.cashout(data.walletAddress, data.multiplier)
 
 
 @app.post("/gameOver")
