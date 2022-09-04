@@ -5,6 +5,7 @@ import hashlib
 import random
 import hmac
 import pandas as pd
+import numpy as np
 import asyncio
 
 
@@ -106,6 +107,21 @@ class Game:
 
     async def is_game_over(self):
         await asyncio.sleep(3)
+
+    def get_current_bets(self):
+        bets = pd.DataFrame(self.bets)
+        if bets.empty:
+            return []
+
+        unique_ads = bets.address.unique()
+        final = []
+        for address in unique_ads:
+            player_bets = bets[bets.address == address]
+            total_bets = np.sum(player_bets.amount)
+            bet = {"walletAddress": address, "betAmount": total_bets}
+            final.append(bet)
+
+        return final
 
     def end_game(self):
         # identifier, timestamp, pool_size, multiplier,

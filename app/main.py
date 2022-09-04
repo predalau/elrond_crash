@@ -30,21 +30,7 @@ def get_current_bets() -> List[BetSchema]:
     """
     Get current bets from the SC
     """
-    bets = game.bets
-    schema = {
-        "timestamp": "timestamp",
-        "address": "walletAddress",
-        "amount": "betAmount",
-        "hasWon": "hasWon",
-        "multiplier": "multiplier",
-        "status": "status",
-        "profit": "profit",
-    }
-    print(bets)
-    for bet in bets:
-        for elem in schema.keys():
-            if elem in bet.keys() and bet.status != "closed":
-                bet.update({schema[elem]: bet[elem]})
+    bets = game.get_current_bets()
 
     return bets
 
