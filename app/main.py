@@ -1,3 +1,4 @@
+import psycopg2
 from typing import Union, Dict, List
 from fastapi import FastAPI
 from schemas import BetSchema, UserSchema, ResponseSchema
@@ -108,8 +109,13 @@ def cashout(address: str, multiplier: float):
 @app.post("/gameOver")
 def end_game():
     global game
-    game.end_game()
-    game = Game()
+    try:
+        game.end_game()
+        game = Game()
+    except psycopg2.InterfaceError:
+        game.data._connect()
+        game.end_game()
+        game = Game()
 
 
 # game.new_game()
