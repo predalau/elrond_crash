@@ -103,7 +103,7 @@ def end_game():
     try:
         game.end_game()
         game = Game()
-    except psycopg2.InterfaceError:
+    except (psycopg2.InterfaceError, psycopg2.OperationalError):
         game.data.db._connect()
         game.end_game()
         game = Game()
