@@ -7,6 +7,7 @@ from discord import Embed, Webhook, RequestsWebhookAdapter
 from bs4 import BeautifulSoup
 from vars import *
 import json
+import threading
 
 scraper = cloudscraper.create_scraper()
 

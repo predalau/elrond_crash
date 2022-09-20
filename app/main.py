@@ -1,16 +1,23 @@
 import psycopg2
+import nest_asyncio
 from typing import Union, Dict, List
 from fastapi import FastAPI
 from schemas import BetSchema, UserSchema, ResponseSchema, CashoutBet
 from helpers import check_player_balance
 from objects import Game, Bet
 from fastapi.middleware.cors import CORSMiddleware
+from datetime import datetime, timedelta
 
+nest_asyncio.apply()
 
-game = Game()
-app = FastAPI()
+# loop.create_task(game.countdown_bets_timer())
 
 # TODO make SCHEMAS for all payloads **in progress**
+
+app = FastAPI()
+
+global game
+game = Game()
 
 app.add_middleware(
     CORSMiddleware,
@@ -26,7 +33,7 @@ app.add_middleware(
     tags=["bets"],
     response_model=List[BetSchema],
 )
-def get_current_bets() -> List[BetSchema]:
+async def get_current_bets() -> List[BetSchema]:
     """
     Get current bets from the SC
     """
@@ -40,7 +47,7 @@ def get_current_bets() -> List[BetSchema]:
     tags=["bets"],
     response_model=List[Dict],
 )
-def get_last_bets() -> List[Dict]:
+async def get_last_bets() -> List[Dict]:
     bets = game.data.get_last_game_bets()
     payload = {
         "bets": bets,
@@ -54,14 +61,14 @@ def get_last_bets() -> List[Dict]:
     tags=["history"],
     response_model=List,
 )
-def get_last_ten_multipliers():
+async def get_last_ten_multipliers():
     multipliers = game.data.get_last_multipliers()
     print(multipliers)
     return multipliers
 
 
 @app.get("/checkPlayerBalance/{walletAddress}/{balance}/{signer}")
-def check_balance(
+async def check_balance(
     walletAddress: str,
     balance: float,
     signer: str,
@@ -71,39 +78,59 @@ def check_balance(
     return payload["status"]
 
 
+@app.get("/getGameStateChange")
+async def change_game_state() -> str:
+    state = await game.get_gamestate_change(game.state)
+    return state
+
+
 @app.get("/isGameOver")
 async def is_game_over():
     await game.is_game_over()
 
 
 @app.get("/endBetsTimestamp")
-def get_end_bets_ts():
+async def get_end_bets_ts():
     return game.end_bets
 
 
 @app.get("/gameOverTimestamp")
-def get_end_game_ts():
+async def get_end_game_ts():
     return game.end_game
 
 
 @app.post("/placeBet")
-def place_bet(data: BetSchema):
+async def place_bet(data: BetSchema):
     bet = Bet(data.walletAddress, data.betAmount)
     game.add_bet(bet)
 
 
 @app.post("/cashout")
-def cashout(data: CashoutBet):
+async def cashout(data: CashoutBet):
     return game.cashout(data.walletAddress, data.multiplier)
 
 
-@app.post("/gameOver")
-def end_game():
-    global game
+@app.post("/crashGame")
+async def end_game():
     try:
         game.end_game()
-        game = Game()
+
+        game.__init__()
+        game.countdown_bets()
+        setattr(game, "state", "play")
+
     except (psycopg2.InterfaceError, psycopg2.OperationalError):
         game.data.db._connect()
         game.end_game()
-        game = Game()
+
+        game.__init__()
+        game.countdown_bets()
+        setattr(game, "state", "play")
+
+
+@app.post("/newGame")
+async def first_run():
+    setattr(game, "start_time", datetime.now() + timedelta(seconds=5))
+    game.countdown_bets()
+    setattr(game, "state", "play")
+    print(game.state)

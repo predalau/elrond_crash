@@ -1,5 +1,6 @@
 from database import GameHistory
 from datetime import datetime, timedelta
+from time import sleep
 from vars import STARTING_WALLET_AMT, SALT_HASH
 import hashlib
 import random
@@ -7,6 +8,7 @@ import hmac
 import pandas as pd
 import numpy as np
 import asyncio
+import threading
 
 
 class Bet:
@@ -45,13 +47,10 @@ class Game:
         self.data = GameHistory()
         self.identifier = self._get_id()
         self.set_next_hash_and_mult()
-        self.state = "betting"
+        self.state = "bet"
         self.house_balance = self.get_house_balance()
         self.bets = []
-        self.start_time = datetime.now()
-        self.end_bets = self.start_time + timedelta(minutes=1)
-        self.sec_to_end = int((self.multiplier - 1) * 10)
-        self.end_game_ts = self.end_bets + timedelta(seconds=self.sec_to_end)
+        self.start_time = datetime.now() + timedelta(seconds=5)
 
     def _get_id(self):
         if self.data.game_history.empty:
@@ -61,6 +60,20 @@ class Game:
             gameid = self.data.game_history["id"].values[-1] + 1
         return gameid
 
+    def start_new_game(self):
+        setattr(self, "identifier", self._get_id())
+        self.set_next_hash_and_mult()
+        setattr(self, "state", "bet")
+        setattr(self, "house_balance", self.get_house_balance())
+        setattr(self, "bets", [])
+        setattr(self, "start_time", datetime.now() + timedelta(seconds=20))
+
+    def change_state(self):
+        if self.state == "bet":
+            setattr(self, "state", "play")
+        elif self.state == "play":
+            setattr(self, "state", "bet")
+
     def get_house_balance(self):
         if self.data.game_history.empty:
             balance = STARTING_WALLET_AMT
@@ -68,11 +81,11 @@ class Game:
             balance = self.data.game_history["house_balance"].values[-1]
         return balance
 
-    def cashout(self, wallet, mult):
+    def cashout(self, wallet, mult, lost=False):
         bets = self.bets
         for bet in bets:
             if bet["address"] == wallet:
-                if self.state != "ended":
+                if not lost:
                     profit = bet["amount"] * mult
                     bet.update({"haswon": True})
                     bet.update({"profit": profit, "status": "closed"})
@@ -105,6 +118,31 @@ class Game:
         setattr(self, "multiplier", multiplier)
         return (hashish, multiplier)
 
+    async def countdown_bets_timer(self):
+        while True:
+            if datetime.now() > self.start_time:
+                self.change_state()
+                print("BETS OFF")
+                return
+            sleep(1)
+
+    def countdown_bets(self):
+        # thread = threading.Thread(target=self.countdown_bets_timer)
+        # thread.start()
+        # thread.join()
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        loop.run_until_complete(self.countdown_bets_timer())
+        loop.close()
+
+    def has_state_changed(self, state):
+        while self.state == state:
+            sleep(0.1)
+        return self.state
+
+    async def get_gamestate_change(self, state):
+        await self.has_state_changed(state)
+
     async def is_game_over(self):
         await asyncio.sleep(3)
 
@@ -126,7 +164,7 @@ class Game:
     def end_game(self):
         # identifier, timestamp, pool_size, multiplier,
         # bets_won, house_profit, house_balance
-        setattr(self, "state", "ended")
+
         pool_size = 0
         for bet in self.bets:
             pool_size += bet["amount"]
@@ -140,17 +178,18 @@ class Game:
                 losers.append(bet)
 
         for bet in losers:
-            self.cashout(bet["address"], 0.0)
+            self.cashout(bet["address"], 0.0, lost=True)
 
         house_profits = pool_size - player_profits
 
-        setattr(self, "timestamp", self.end_game_ts)
+        setattr(self, "timestamp", datetime.now())
         setattr(self, "house_profit", house_profits)
         setattr(self, "pool_size", pool_size)
         setattr(self, "house_balance", self.house_balance + house_profits)
 
         self.save_game_history()
         self.save_bets_history()
+        self.start_new_game()
 
     def save_game_history(self):
         print("Saving history: ")
@@ -205,9 +244,14 @@ class Game:
             setattr(self, key, dic[key])
 
     def add_bet(self, bet: Bet):
+        if datetime.now() > self.start_time or self.state == "play":
+            self.change_state()
+            return False
+
         new_bets = self.bets
         new_bet = bet.to_dict()
         new_bet.update({"hash": self.hash})
         new_bets.append(new_bet)
         print(new_bets)
         setattr(self, "bets", new_bets)
+        return True
