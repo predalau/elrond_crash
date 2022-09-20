@@ -124,8 +124,6 @@ async def cashout(data: CashoutBet):
 async def end_game():
     try:
         game.end_game()
-
-        game.__init__()
         game.countdown_bets()
         setattr(game, "state", "play")
 
@@ -133,7 +131,6 @@ async def end_game():
         game.data.db._connect()
         game.end_game()
 
-        game.__init__()
         game.countdown_bets()
         setattr(game, "state", "play")
 
