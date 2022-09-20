@@ -79,14 +79,15 @@ async def check_balance(
     return payload["status"]
 
 
-@app.get("getMultiplier")
+@app.get("/getMultiplier")
 async def get_current_multiplier():
     mult = bytes(str(game.multiplier), "utf-8")
-    mult = base58.b58decode(mult)
+    print(mult)
+    mult = base58.b58encode(mult)
     return {"multiplier": mult}
 
 
-@app.get("getCurrentGameState")
+@app.get("/getCurrentGameState")
 async def get_game_state():
     state = game.state
     return {"state": state}
