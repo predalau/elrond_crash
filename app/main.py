@@ -106,12 +106,7 @@ async def is_game_over():
 
 @app.get("/endBetsTimestamp")
 async def get_end_bets_ts():
-    return game.end_bets
-
-
-@app.get("/gameOverTimestamp")
-async def get_end_game_ts():
-    return game.end_game
+    return game.start_time.isoformat()
 
 
 @app.post("/placeBet")
