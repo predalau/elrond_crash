@@ -50,7 +50,7 @@ class Game:
         self.state = "bet"
         self.house_balance = self.get_house_balance()
         self.bets = []
-        self.start_time = datetime.now() + timedelta(seconds=5)
+        self.start_time = datetime.now() + timedelta(seconds=10)
 
     def _get_id(self):
         if self.data.game_history.empty:
@@ -62,11 +62,12 @@ class Game:
 
     def start_new_game(self):
         setattr(self, "identifier", self._get_id())
+        setattr(self, "data", GameHistory())
         self.set_next_hash_and_mult()
         setattr(self, "state", "bet")
         setattr(self, "house_balance", self.get_house_balance())
         setattr(self, "bets", [])
-        setattr(self, "start_time", datetime.now() + timedelta(seconds=20))
+        setattr(self, "start_time", datetime.now() + timedelta(seconds=10))
 
     def change_state(self):
         if self.state == "bet":
@@ -189,6 +190,7 @@ class Game:
 
         self.save_game_history()
         self.save_bets_history()
+        sleep(1)
         self.start_new_game()
 
     def save_game_history(self):

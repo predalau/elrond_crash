@@ -124,10 +124,13 @@ async def cashout(data: CashoutBet):
 async def end_game():
     try:
         game.end_game()
+        print(game.__dict__)
         game.countdown_bets()
         setattr(game, "state", "play")
 
-    except (psycopg2.InterfaceError, psycopg2.OperationalError):
+    except (psycopg2.InterfaceError, psycopg2.OperationalError) as e:
+        print("Connection ERROR! attempting to reconnect")
+        print(e)
         game.data.db._connect()
         game.end_game()
 
