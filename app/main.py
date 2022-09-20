@@ -1,5 +1,6 @@
 import psycopg2
 import nest_asyncio
+import base58
 from typing import Union, Dict, List
 from fastapi import FastAPI
 from schemas import BetSchema, UserSchema, ResponseSchema, CashoutBet
@@ -76,6 +77,19 @@ async def check_balance(
     # user = UserSchema(walletAddress=walletAddress, balance=balance, signer=signer)
     payload = {"status": check_player_balance(walletAddress, balance)}
     return payload["status"]
+
+
+@app.get("getMultiplier")
+async def get_current_multiplier():
+    mult = bytes(str(game.multiplier), "utf-8")
+    mult = base58.b58decode(mult)
+    return {"multiplier": mult}
+
+
+@app.get("getCurrentGameState")
+async def get_game_state():
+    state = game.state
+    return {"state": state}
 
 
 @app.get("/getGameStateChange")
