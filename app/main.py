@@ -150,9 +150,8 @@ async def end_game():
     except (psycopg2.InterfaceError, psycopg2.OperationalError) as e:
         print("Connection ERROR! attempting to reconnect")
         print(e)
-        game.data.db._connect()
+        game.data.db.__init__()
         await game.end_game()
-
         await game.countdown_bets()
 
 
