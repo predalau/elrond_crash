@@ -41,9 +41,7 @@ async def websocket(websocket: WebSocket):
     global game
     await websocket.accept()
     while True:
-        await websocket.send_text("Hi")
         state = await game.get_gamestate_change()
-
         await websocket.send_text(state)
 
 
