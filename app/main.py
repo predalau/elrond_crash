@@ -43,6 +43,10 @@ async def websocket(websocket: WebSocket):
     while True:
         state = await game.get_gamestate_change()
         await websocket.send_text(state)
+        if state == "bet":
+            mult = await get_current_multiplier()
+            mult = mult["multiplier"]
+            await websocket.send_text(mult)
 
 
 @app.get(
