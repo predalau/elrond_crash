@@ -2,12 +2,14 @@ import psycopg2
 import nest_asyncio
 import base58
 from typing import Union, Dict, List
-from fastapi import FastAPI
+from fastapi import FastAPI, WebSocket
 from schemas import BetSchema, UserSchema, ResponseSchema, CashoutBet
 from helpers import check_player_balance
 from objects import Game, Bet
 from fastapi.middleware.cors import CORSMiddleware
 from datetime import datetime, timedelta
+import asyncio
+from time import sleep
 
 nest_asyncio.apply()
 
@@ -17,7 +19,7 @@ nest_asyncio.apply()
 
 app = FastAPI()
 
-global game
+# global game
 game = Game()
 
 app.add_middleware(
@@ -29,6 +31,22 @@ app.add_middleware(
 )
 
 
+@app.on_event("startup")
+async def startup_event():
+    asyncio.create_task(first_run())
+
+
+@app.websocket("/ws")
+async def websocket(websocket: WebSocket):
+    global game
+    await websocket.accept()
+    while True:
+        await websocket.send_text("Hi")
+        state = await game.get_gamestate_change()
+
+        await websocket.send_text(state)
+
+
 @app.get(
     "/currentBets",
     tags=["bets"],
@@ -38,6 +56,7 @@ async def get_current_bets() -> List[BetSchema]:
     """
     Get current bets from the SC
     """
+    global game
     bets = game.get_current_bets()
 
     return bets
@@ -49,6 +68,7 @@ async def get_current_bets() -> List[BetSchema]:
     response_model=List[Dict],
 )
 async def get_last_bets() -> List[Dict]:
+    global game
     bets = game.data.get_last_game_bets()
     payload = {
         "bets": bets,
@@ -63,6 +83,7 @@ async def get_last_bets() -> List[Dict]:
     response_model=List,
 )
 async def get_last_ten_multipliers():
+    global game
     multipliers = game.data.get_last_multipliers()
     print(multipliers)
     return multipliers
@@ -79,68 +100,75 @@ async def check_balance(
     return payload["status"]
 
 
-@app.get("/getMultiplier")
+@app.get("/getMultiplier", tags=["getters"])
 async def get_current_multiplier():
+    global game
     mult = bytes(str(game.multiplier), "utf-8")
     print(mult)
     mult = base58.b58encode(mult)
     return {"multiplier": mult}
 
 
-@app.get("/getCurrentGameState")
+@app.get("/getCurrentGameState", tags=["dev", "getters"])
 async def get_game_state():
+    global game
     state = game.state
     return {"state": state}
 
 
-@app.get("/getGameStateChange")
+@app.get("/getGameStateChange", tags=["getters"])
 async def change_game_state() -> str:
-    state = await game.get_gamestate_change(game.state)
+    global game
+
+    state = await game.get_gamestate_change()
     return state
 
 
-@app.get("/isGameOver")
-async def is_game_over():
-    await game.is_game_over()
-
-
-@app.get("/endBetsTimestamp")
+@app.get("/endBetsTimestamp", tags=["dev", "getters"])
 async def get_end_bets_ts():
     return game.start_time.isoformat()
 
 
-@app.post("/placeBet")
+@app.post("/placeBet", tags=["bets"])
 async def place_bet(data: BetSchema):
     bet = Bet(data.walletAddress, data.betAmount)
     game.add_bet(bet)
 
 
-@app.post("/cashout")
+@app.post("/cashout", tags=["bets", "actions"])
 async def cashout(data: CashoutBet):
     return game.cashout(data.walletAddress, data.multiplier)
 
 
-@app.post("/crashGame")
+@app.post("/crashGame", tags=["actions"])
 async def end_game():
+    global game
     try:
-        game.end_game()
-        print(game.__dict__)
-        game.countdown_bets()
-        setattr(game, "state", "play")
+        await game.end_game()
+        await game.countdown_bets()
 
     except (psycopg2.InterfaceError, psycopg2.OperationalError) as e:
         print("Connection ERROR! attempting to reconnect")
         print(e)
         game.data.db._connect()
-        game.end_game()
+        await game.end_game()
 
-        game.countdown_bets()
-        setattr(game, "state", "play")
+        await game.countdown_bets()
 
 
-@app.post("/newGame")
+@app.post("/newGame", tags=["dev", "actions"])
 async def first_run():
+    global game
     setattr(game, "start_time", datetime.now() + timedelta(seconds=5))
-    game.countdown_bets()
-    setattr(game, "state", "play")
-    print(game.state)
+    await game.countdown_bets()
+
+
+@app.post("/toggleGameState", tags=["dev", "actions"])
+async def toggle_State():
+    global game
+    old_state = game.state
+    game.toggle_state()
+    if game.state != old_state:
+        return "Success"
+    else:
+        return "Fail"

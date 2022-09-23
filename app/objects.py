@@ -52,6 +52,22 @@ class Game:
         self.bets = []
         self.start_time = datetime.now() + timedelta(seconds=10)
 
+    @property
+    def _state(self):
+        return self.state
+
+    @_state.setter
+    def _state(self, a):
+        self.state = a
+
+    def toggle_state(self):
+        curr_state = self._state
+
+        if curr_state == "bet":
+            self.state = "play"
+        elif curr_state == "play":
+            self.state = "bet"
+
     def _get_id(self):
         if self.data.game_history.empty:
             return 0
@@ -64,7 +80,7 @@ class Game:
         setattr(self, "identifier", self._get_id())
         setattr(self, "data", GameHistory())
         self.set_next_hash_and_mult()
-        setattr(self, "state", "bet")
+        self._state = "bet"
         setattr(self, "house_balance", self.get_house_balance())
         setattr(self, "bets", [])
         setattr(self, "start_time", datetime.now() + timedelta(seconds=10))
@@ -122,30 +138,32 @@ class Game:
     async def countdown_bets_timer(self):
         while True:
             if datetime.now() > self.start_time:
-                self.change_state()
+                self.toggle_state()
                 print("BETS OFF")
                 return
-            sleep(1)
+            await asyncio.sleep(1)
 
-    def countdown_bets(self):
+    async def countdown_bets(self):
         # thread = threading.Thread(target=self.countdown_bets_timer)
         # thread.start()
         # thread.join()
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        loop.run_until_complete(self.countdown_bets_timer())
-        loop.close()
+        # loop = asyncio.new_event_loop()
+        # asyncio.set_event_loop(loop)
+        # loop.run_until_complete(self.countdown_bets_timer())
+        # loop.close()
+        return await self.countdown_bets_timer()
 
-    def has_state_changed(self, state):
-        while self.state == state:
-            sleep(0.1)
-        return self.state
+    async def has_state_changed(self, state):
+        while True:
+            if self._state != state:
+                return self._state
 
-    async def get_gamestate_change(self, state):
-        await self.has_state_changed(state)
+            await asyncio.sleep(0.5)
 
-    async def is_game_over(self):
-        await asyncio.sleep(3)
+    async def get_gamestate_change(self):
+        state = self._state
+        new_state = await self.has_state_changed(state)
+        return new_state
 
     def get_current_bets(self):
         bets = pd.DataFrame(self.bets)
@@ -162,7 +180,7 @@ class Game:
 
         return final
 
-    def end_game(self):
+    async def end_game(self):
         # identifier, timestamp, pool_size, multiplier,
         # bets_won, house_profit, house_balance
 
@@ -190,7 +208,7 @@ class Game:
 
         self.save_game_history()
         self.save_bets_history()
-        sleep(1)
+        await asyncio.sleep(1)
         self.start_new_game()
 
     def save_game_history(self):
@@ -247,7 +265,7 @@ class Game:
 
     def add_bet(self, bet: Bet):
         if datetime.now() > self.start_time or self.state == "play":
-            self.change_state()
+            self.toggle_state()
             return False
 
         new_bets = self.bets
