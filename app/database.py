@@ -193,7 +193,7 @@ class GameHistory:
             if len(self.game_history["multiplier"].values) < 10:
                 multipliers = self.game_history["multiplier"].tolist()
             else:
-                multipliers = self.game_history["multiplier"].loc[-10:].tolist()
+                multipliers = self.game_history["multiplier"].tolist()[-10:]
             return multipliers
 
         else:

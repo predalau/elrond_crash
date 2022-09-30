@@ -51,6 +51,7 @@ class Game:
         self.house_balance = self.get_house_balance()
         self.bets = []
         self.start_time = datetime.now() + timedelta(seconds=10)
+        self.set_mult_array()
 
     @property
     def _state(self):
@@ -59,6 +60,42 @@ class Game:
     @_state.setter
     def _state(self, a):
         self.state = a
+
+    def set_mult_array(self):
+        assert hasattr(self, "multiplier")
+        setattr(self, "runtime_index", 0)
+        setattr(self, "multiplier_now", 1)
+        mult_array = np.linspace(1, self.multiplier, num=int(self.multiplier * 100))
+        setattr(self, "mult_array", mult_array)
+
+    async def get_mult_now(self):
+        delays = [0.25, 0.15, 0.01]
+
+        assert hasattr(self, "runtime_index")
+        i = self.runtime_index
+        if i == -1:
+            return -1
+
+        assert hasattr(self, "multiplier_now")
+        mult_now = float(format(self.multiplier_now, ".2f"))
+
+        assert hasattr(self, "mult_array")
+
+        if mult_now > 0 and mult_now < 2:
+            await asyncio.sleep(delays[0])
+        elif mult_now >= 2 and mult_now < 3.5:
+            await asyncio.sleep(delays[1])
+        elif mult_now >= 3.5:
+            await asyncio.sleep(delays[2])
+
+        if i >= len(self.mult_array) - 1:
+            setattr(self, "multiplier_now", -1)
+            setattr(self, "runtime_index", -1)
+        else:
+            setattr(self, "multiplier_now", self.mult_array[i + 1])
+            setattr(self, "runtime_index", i + 1)
+
+        return mult_now
 
     def toggle_state(self):
         curr_state = self._state
@@ -175,9 +212,15 @@ class Game:
         for address in unique_ads:
             player_bets = bets[bets.address == address]
             total_bets = np.sum(player_bets.amount)
-            bet = {"walletAddress": address, "betAmount": total_bets}
+            state = player_bets.status.values[0]
+            bet = {
+                "walletAddress": address,
+                "betAmount": total_bets,
+                "state": state,
+            }
             final.append(bet)
 
+        final.reverse()
         return final
 
     async def end_game(self):

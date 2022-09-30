@@ -8,8 +8,8 @@ from helpers import check_player_balance
 from objects import Game, Bet
 from fastapi.middleware.cors import CORSMiddleware
 from datetime import datetime, timedelta
-import asyncio
-from time import sleep
+import json
+import websockets
 
 nest_asyncio.apply()
 
@@ -31,22 +31,67 @@ app.add_middleware(
 )
 
 
-@app.on_event("startup")
-async def startup_event():
-    asyncio.create_task(first_run())
-
-
 @app.websocket("/ws")
-async def websocket(websocket: WebSocket):
+async def ws(websocket: WebSocket):
     global game
-    await websocket.accept()
-    while True:
-        state = await game.get_gamestate_change()
-        await websocket.send_text(state)
-        if state == "bet":
-            mult = await get_current_multiplier()
-            mult = mult["multiplier"]
-            await websocket.send_text(mult)
+    try:
+        await websocket.accept()
+        while True:
+            if datetime.now() > game.start_time and game.state == "bet":
+                game.toggle_state()
+
+            state = game.state
+
+            mult = await game.get_mult_now()
+            activeBets = game.get_current_bets()
+            payload = {"gameState": state, "multiplier": mult, "activeBets": activeBets}
+            payload = json.dumps(payload)
+            await websocket.send_json(payload)
+
+            if mult == -1:
+                await game.end_game()
+                game.__init__()
+
+    except (
+        websockets.ConnectionClosed,
+        websockets.ConnectionClosedOK,
+        websockets.exceptions.ConnectionClosedError,
+    ):
+        websocket.accept()
+
+
+@app.websocket("/wsAction")
+async def cashout_bet_socket(websocket: WebSocket):
+    global game
+    try:
+        await websocket.accept()
+        while True:
+            message = await websocket.recv()
+            address = message.address
+            mult = game.get_mult_now()
+            game.cashout(address, mult)
+
+    except Exception as e:
+        print(str(e))
+    finally:
+        pass
+
+
+@app.websocket("/wsMult")
+async def cashout(websocket: WebSocket):
+    global game
+    try:
+        await websocket.accept()
+        while True:
+            mult = await game.get_mult_now()
+            mult = bytes(str(mult), "utf-8")
+            mult = base58.b58encode(mult)
+            await websocket.send_json({"multiplier": mult})
+
+    except Exception as e:
+        print(str(e))
+    finally:
+        pass
 
 
 @app.get(
@@ -147,21 +192,14 @@ async def end_game():
     global game
     try:
         await game.end_game()
-        await game.countdown_bets()
+        game.__init__()
 
     except (psycopg2.InterfaceError, psycopg2.OperationalError) as e:
         print("Connection ERROR! attempting to reconnect")
         print(e)
         game.data.db.__init__()
         await game.end_game()
-        await game.countdown_bets()
-
-
-@app.post("/newGame", tags=["dev", "actions"])
-async def first_run():
-    global game
-    setattr(game, "start_time", datetime.now() + timedelta(seconds=5))
-    await game.countdown_bets()
+        game.__init__()
 
 
 @app.post("/toggleGameState", tags=["dev", "actions"])
