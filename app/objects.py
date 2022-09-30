@@ -69,7 +69,11 @@ class Game:
         setattr(self, "mult_array", mult_array)
 
     async def get_mult_now(self):
-        delays = [0.25, 0.15, 0.01]
+        delays = [0.1, 0.04, 0.02]
+
+        if self.state == "bet":
+            await asyncio.sleep(delays[0])
+            return -1
 
         assert hasattr(self, "runtime_index")
         i = self.runtime_index
@@ -120,7 +124,7 @@ class Game:
         self._state = "bet"
         setattr(self, "house_balance", self.get_house_balance())
         setattr(self, "bets", [])
-        setattr(self, "start_time", datetime.now() + timedelta(seconds=10))
+        setattr(self, "start_time", datetime.now() + timedelta(seconds=25))
 
     def change_state(self):
         if self.state == "bet":

@@ -48,7 +48,7 @@ async def ws(websocket: WebSocket):
             payload = json.dumps(payload)
             await websocket.send_json(payload)
 
-            if mult == -1:
+            if mult == -1 and game.state == "play":
                 await game.end_game()
                 game.__init__()
 
