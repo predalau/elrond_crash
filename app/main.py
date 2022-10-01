@@ -10,6 +10,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from datetime import datetime, timedelta
 import json
 import websockets
+import asyncio
 
 nest_asyncio.apply()
 
@@ -37,6 +38,13 @@ async def ws(websocket: WebSocket):
     try:
         await websocket.accept()
         while True:
+            if hasattr(game, "isPaused") and game.isPaused:
+                await asyncio.sleep(1)
+                payload = {"gameState": "paused", "multiplier": -1, "activeBets": []}
+                payload = json.dumps(payload)
+                await websocket.send_json(payload)
+                continue
+
             if datetime.now() > game.start_time and game.state == "bet":
                 game.toggle_state()
 
@@ -57,7 +65,9 @@ async def ws(websocket: WebSocket):
         websockets.ConnectionClosedOK,
         websockets.exceptions.ConnectionClosedError,
     ):
-        websocket.accept()
+        await websocket.accept()
+        await game.end_game()
+        game.__init__()
 
 
 @app.websocket("/wsAction")
@@ -211,3 +221,15 @@ async def toggle_State():
         return "Success"
     else:
         return "Fail"
+
+
+@app.post("/pauseGame", tags=["dev", "actions"])
+async def pause_game():
+    global game
+    setattr(game, "isPaused", True)
+
+
+@app.post("/resumeGame", tags=["dev", "actions"])
+async def pause_game():
+    global game
+    setattr(game, "isPaused", False)
