@@ -65,7 +65,12 @@ class Game:
         assert hasattr(self, "multiplier")
         setattr(self, "runtime_index", 0)
         setattr(self, "multiplier_now", 1)
-        mult_array = np.linspace(1, self.multiplier, num=int(self.multiplier * 100))
+
+        if self.multiplier == 1:
+            mult_array = [-1]
+        else:
+            mult_array = np.linspace(1, self.multiplier, num=int(self.multiplier * 100))
+
         setattr(self, "mult_array", mult_array)
 
     async def get_mult_now(self):
