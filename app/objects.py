@@ -69,7 +69,7 @@ class Game:
         if self.multiplier == 1:
             mult_array = [-1]
         else:
-            mult_array = np.linspace(1, self.multiplier, num=int(self.multiplier * 100))
+            mult_array = np.linspace(1, self.multiplier, num=int(self.multiplier * 50))
 
         setattr(self, "mult_array", mult_array)
 

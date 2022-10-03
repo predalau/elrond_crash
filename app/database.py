@@ -133,7 +133,7 @@ class ElrondCrashDatabase:
         self.conn.commit()
         return self.cur.fetchall()
 
-    def get_table(self, table):
+    def get_table(self, table, limit=-1):
         """
         Function returns a pandas DataFrame of a table in
         'elrond.db'
@@ -142,10 +142,16 @@ class ElrondCrashDatabase:
         table (str): the name of the table
 
         """
-        df = pd.read_sql_query(
-            f"SELECT * FROM {table}",
-            self.conn,
-        )
+        if limit > 0:
+            df = pd.read_sql_query(
+                f"SELECT * FROM {table} ORDER BY timestamp DESC LIMIT {limit}",
+                self.conn,
+            )
+        else:
+            df = pd.read_sql_query(
+                f"SELECT * FROM {table}",
+                self.conn,
+            )
         return df
 
     def get_last_rows(self):
@@ -190,10 +196,10 @@ class GameHistory:
 
     def get_last_multipliers(self):
         if hasattr(self, "game_history") and not self.game_history.empty:
-            if len(self.game_history["multiplier"].values) < 10:
+            if len(self.game_history["multiplier"].values) < 30:
                 multipliers = self.game_history["multiplier"].tolist()
             else:
-                multipliers = self.game_history["multiplier"].tolist()[-10:]
+                multipliers = self.game_history["multiplier"].tolist()[-30:]
             return multipliers
 
         else:

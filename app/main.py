@@ -65,8 +65,7 @@ async def ws(websocket: WebSocket):
         websockets.ConnectionClosedOK,
         websockets.exceptions.ConnectionClosedError,
     ):
-        await game.end_game()
-        game.__init__()
+        pass
 
 
 @app.websocket("/wsAction")
