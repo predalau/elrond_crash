@@ -48,10 +48,12 @@ class Game:
         self.identifier = self._get_id()
         self.set_next_hash_and_mult()
         self.state = "bet"
+        self.delay = 0.1
         self.house_balance = self.get_house_balance()
         self.bets = []
         self.start_time = datetime.now() + timedelta(seconds=10)
         self.set_mult_array()
+        print("new game!")
 
     @property
     def _state(self):
@@ -67,41 +69,41 @@ class Game:
         setattr(self, "multiplier_now", 1)
 
         if self.multiplier == 1:
-            mult_array = [-1]
+            mult_array = [1, 1, -1]
         else:
             mult_array = np.linspace(1, self.multiplier, num=int(self.multiplier * 50))
 
         setattr(self, "mult_array", mult_array)
 
-    async def get_mult_now(self):
+    def iterate_game(self):
         delays = [0.1, 0.04, 0.02]
 
-        if self.state == "bet":
-            await asyncio.sleep(delays[0])
-            return -1
-
         assert hasattr(self, "runtime_index")
-        i = self.runtime_index
-        if i == -1:
-            return -1
-
         assert hasattr(self, "multiplier_now")
-        mult_now = float(format(self.multiplier_now, ".2f"))
-
         assert hasattr(self, "mult_array")
 
-        if mult_now > 0 and mult_now < 2:
-            await asyncio.sleep(delays[0])
-        elif mult_now >= 2 and mult_now < 3.5:
-            await asyncio.sleep(delays[1])
-        elif mult_now >= 3.5:
-            await asyncio.sleep(delays[2])
+        i = self.runtime_index
+        if i == -1:
+            return
 
-        if i >= len(self.mult_array) - 1:
+        mult_now = self.multiplier_now
+
+        if mult_now > 0 and mult_now < 2:
+            setattr(self, "delay", delays[0])
+        elif mult_now >= 2 and mult_now < 3.5:
+            setattr(self, "delay", delays[1])
+        elif mult_now >= 3.5:
+            setattr(self, "delay", delays[2])
+
+        if i == len(self.mult_array) - 1:
             setattr(self, "multiplier_now", -1)
             setattr(self, "runtime_index", -1)
         else:
-            setattr(self, "multiplier_now", self.mult_array[i + 1])
+            setattr(
+                self,
+                "multiplier_now",
+                float(format(self.mult_array[i + 1], ".2f")),
+            )
             setattr(self, "runtime_index", i + 1)
 
         return mult_now
@@ -112,13 +114,16 @@ class Game:
         if curr_state == "bet":
             self.state = "play"
         elif curr_state == "play":
+            self.state = "end"
+        elif curr_state == "end":
             self.state = "bet"
+
+        print("Game state: \t", self.state)
 
     def _get_id(self):
         if self.data.game_history.empty:
             return 0
         else:
-            print(self.data.game_history)
             gameid = self.data.game_history["id"].values[-1] + 1
         return gameid
 
@@ -235,7 +240,8 @@ class Game:
     async def end_game(self):
         # identifier, timestamp, pool_size, multiplier,
         # bets_won, house_profit, house_balance
-
+        self.toggle_state()
+        await asyncio.sleep(1)
         pool_size = 0
         for bet in self.bets:
             pool_size += bet["amount"]
@@ -260,8 +266,7 @@ class Game:
 
         self.save_game_history()
         self.save_bets_history()
-        await asyncio.sleep(1)
-        self.start_new_game()
+        self.__init__()
 
     def save_game_history(self):
         print("Saving history: ")

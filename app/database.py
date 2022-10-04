@@ -191,7 +191,7 @@ class GameHistory:
 
     def _import_bet_history(self):
         df = self.db.get_table("bets")
-        print(df)
+
         return df
 
     def get_last_multipliers(self):
@@ -221,8 +221,6 @@ class GameHistory:
             "haswon": "haswon",
         }
         parsed_bets = []
-        print(bets)
-        print(bets.columns)
 
         for i, bet in bets.iterrows():
             dic = {}

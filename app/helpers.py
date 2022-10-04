@@ -12,6 +12,14 @@ import threading
 scraper = cloudscraper.create_scraper()
 
 
+async def game_logic():
+    try:
+        await asyncio.sleep(3)
+        print("hello!")
+    except Exception as e:
+        print(str(e))
+
+
 def get_http_request(url):
     req = scraper.get(url)
     sleep(DELAY)

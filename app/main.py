@@ -2,7 +2,7 @@ import psycopg2
 import nest_asyncio
 import base58
 from typing import Union, Dict, List
-from fastapi import FastAPI, WebSocket
+from fastapi import FastAPI, WebSocket, BackgroundTasks
 from schemas import BetSchema, UserSchema, ResponseSchema, CashoutBet
 from helpers import check_player_balance
 from objects import Game, Bet
@@ -21,7 +21,7 @@ nest_asyncio.apply()
 app = FastAPI()
 
 # global game
-game = Game()
+global game
 
 app.add_middleware(
     CORSMiddleware,
@@ -32,10 +32,38 @@ app.add_middleware(
 )
 
 
+async def run_game():
+    global game
+    game = Game()
+
+    while True:
+        if hasattr(game, "isPaused") and game.isPaused:
+            await asyncio.sleep(1)
+            continue
+        while game.state == "bet":
+            if datetime.now() > game.start_time:
+                print("closing bets")
+                game.toggle_state()
+            else:
+                await asyncio.sleep(1)
+
+        while game.state == "play":
+            await asyncio.sleep(game.delay)
+            game.iterate_game()
+            if game.multiplier_now == -1:
+                await game.end_game()
+
+
+@app.on_event("startup")
+async def start_game():
+    asyncio.create_task(run_game())
+    return {"message": "Game is running!"}
+
+
 @app.websocket("/ws")
 async def ws(websocket: WebSocket):
-    global game
     try:
+        global game
         await websocket.accept()
         while True:
             if hasattr(game, "isPaused") and game.isPaused:
@@ -45,21 +73,15 @@ async def ws(websocket: WebSocket):
                 await websocket.send_json(payload)
                 continue
 
-            if datetime.now() > game.start_time and game.state == "bet":
-                game.toggle_state()
-
-            state = game.state
-
-            mult = await game.get_mult_now()
-            activeBets = game.get_current_bets()
-            payload = {"gameState": state, "multiplier": mult, "activeBets": activeBets}
+            await asyncio.sleep(0.05)
+            payload = {
+                "gameState": game.state,
+                "multiplier": game.multiplier_now,
+                "activeBets": game.get_current_bets(),
+                "delay": game.delay,
+            }
             payload = json.dumps(payload)
             await websocket.send_json(payload)
-
-            if mult == -1 and game.state == "play":
-                await game.end_game()
-                game.__init__()
-
     except (
         websockets.ConnectionClosed,
         websockets.ConnectionClosedOK,
