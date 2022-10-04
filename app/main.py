@@ -77,7 +77,6 @@ async def ws(websocket: WebSocket):
                 "gameState": game.state,
                 "multiplier": game.multiplier_now,
                 "activeBets": game.get_current_bets(),
-                "delay": game.delay,
             }
             payload = json.dumps(payload)
             await websocket.send_json(payload)
