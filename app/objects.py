@@ -53,7 +53,6 @@ class Game:
         self.bets = []
         self.start_time = datetime.now() + timedelta(seconds=10)
         self.set_mult_array()
-        print("new game!")
 
     @property
     def _state(self):
@@ -190,7 +189,6 @@ class Game:
         while True:
             if datetime.now() > self.start_time:
                 self.toggle_state()
-                print("BETS OFF")
                 return
             await asyncio.sleep(1)
 

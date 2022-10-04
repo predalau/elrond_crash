@@ -42,7 +42,6 @@ async def run_game():
             continue
         while game.state == "bet":
             if datetime.now() > game.start_time:
-                print("closing bets")
                 game.toggle_state()
             else:
                 await asyncio.sleep(1)
@@ -162,7 +161,6 @@ async def get_last_bets() -> List[Dict]:
 async def get_last_ten_multipliers():
     global game
     multipliers = game.data.get_last_multipliers()
-    print(multipliers)
     return multipliers
 
 
@@ -181,7 +179,6 @@ async def check_balance(
 async def get_current_multiplier():
     global game
     mult = bytes(str(game.multiplier), "utf-8")
-    print(mult)
     mult = base58.b58encode(mult)
     return {"multiplier": mult}
 
