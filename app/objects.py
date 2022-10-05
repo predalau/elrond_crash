@@ -1,7 +1,9 @@
 from database import GameHistory
 from datetime import datetime, timedelta
 from time import sleep
-from vars import STARTING_WALLET_AMT, SALT_HASH
+from vars import STARTING_WALLET_AMT, SALT_HASH  # , REWARDS_WALLET
+from helpers import get_http_request
+import json
 import hashlib
 import random
 import hmac
@@ -44,6 +46,7 @@ class Game:
     """docstring for Game"""
 
     def __init__(self):
+        # self.house_address = REWARDS_WALLET
         self.data = GameHistory()
         self.identifier = self._get_id()
         self.set_next_hash_and_mult()
@@ -81,11 +84,25 @@ class Game:
         assert hasattr(self, "multiplier_now")
         assert hasattr(self, "mult_array")
 
+        mult_now = self.multiplier_now
+        player_potential_wins = 0
+
+        for elem in self.bets:
+            print(elem)
+            if elem["haswon"]:
+                player_potential_wins += elem["profit"]
+            else:
+                player_potential_wins += elem["amount"] * mult_now
+
+        if player_potential_wins > 0.05 * self.house_balance:
+            print("FORCED CRASH!")
+            setattr(self, "multiplier_now", -1)
+            setattr(self, "runtime_index", -1)
+            return
+
         i = self.runtime_index
         if i == -1:
             return
-
-        mult_now = self.multiplier_now
 
         if mult_now > 0 and mult_now < 2:
             setattr(self, "delay", delays[0])
@@ -146,6 +163,11 @@ class Game:
             balance = STARTING_WALLET_AMT
         else:
             balance = self.data.game_history["house_balance"].values[-1]
+            # req_url = f"https://api.elrond.com/accounts/{REWARDS_WALLET}"
+            # req = get_http_request(req_url)
+            # req = json.loads(req)
+            # balance = float(req["balance"]) / 10**18
+
         return balance
 
     def cashout(self, wallet, mult, lost=False):
@@ -228,6 +250,7 @@ class Game:
             bet = {
                 "walletAddress": address,
                 "betAmount": total_bets,
+                "profit": np.sum(player_bets.profit),
                 "state": state,
             }
             final.append(bet)
@@ -319,7 +342,7 @@ class Game:
             setattr(self, key, dic[key])
 
     def add_bet(self, bet: Bet):
-        if datetime.now() > self.start_time or self.state == "play":
+        if datetime.now() > self.start_time or self.state in ["play", "end"]:
             self.toggle_state()
             return False
 

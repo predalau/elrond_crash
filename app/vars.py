@@ -12,6 +12,7 @@ DB_HOST = os.getenv("DB_HOST")
 DB_PORT = int(os.getenv("DB_PORT"))
 DB_PASS = os.getenv("DB_PASS")
 DB_USER = os.getenv("DB_USER")
+# REWARDS_WALLET = os.getenv("REWARDS_WALLET")
 DATABASE_MAP = {
     "games": {
         "identifier": [],

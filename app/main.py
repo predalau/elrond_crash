@@ -2,7 +2,7 @@ import psycopg2
 import nest_asyncio
 import base58
 from typing import Union, Dict, List
-from fastapi import FastAPI, WebSocket, BackgroundTasks
+from fastapi import FastAPI, WebSocket, BackgroundTasks, HTTPException
 from schemas import BetSchema, UserSchema, ResponseSchema, CashoutBet
 from helpers import check_player_balance
 from objects import Game, Bet
@@ -78,7 +78,8 @@ async def ws(websocket: WebSocket):
                 "multiplier": game.multiplier_now,
                 "activeBets": game.get_current_bets(),
             }
-            payload = json.dumps(payload)
+
+            payload = json.dumps(str(payload))
             await websocket.send_json(payload)
     except (
         websockets.ConnectionClosed,
@@ -204,12 +205,25 @@ async def get_end_bets_ts():
 
 @app.post("/placeBet", tags=["bets"])
 async def place_bet(data: BetSchema):
+    if game.state in ["play", "end"]:
+        raise HTTPException(
+            status_code=403,
+            detail="Can only place bet during BETTING stage",
+        )
+
     bet = Bet(data.walletAddress, data.betAmount)
     game.add_bet(bet)
+    return {"status": "success"}
 
 
 @app.post("/cashout", tags=["bets", "actions"])
 async def cashout(data: CashoutBet):
+    if game.state in ["bet", "end"]:
+        raise HTTPException(
+            status_code=403,
+            detail="Can only cashout bet during PLAYING stage",
+        )
+
     return game.cashout(data.walletAddress, data.multiplier)
 
 

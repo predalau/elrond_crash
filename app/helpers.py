@@ -7,17 +7,8 @@ from discord import Embed, Webhook, RequestsWebhookAdapter
 from bs4 import BeautifulSoup
 from vars import *
 import json
-import threading
 
 scraper = cloudscraper.create_scraper()
-
-
-async def game_logic():
-    try:
-        await asyncio.sleep(3)
-        print("hello!")
-    except Exception as e:
-        print(str(e))
 
 
 def get_http_request(url):
