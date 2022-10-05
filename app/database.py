@@ -210,7 +210,7 @@ class GameHistory:
             bets = []
             return bets
         else:
-            hashish = self.bet_history["hash"].values[-1]
+            hashish = self.game_history["hash"].values[-1]
             print(hashish)
             bets = self.bet_history[self.bet_history["hash"] == hashish]
 
