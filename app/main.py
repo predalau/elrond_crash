@@ -79,7 +79,7 @@ async def ws(websocket: WebSocket):
                 "activeBets": game.get_current_bets(),
             }
 
-            payload = json.dumps(str(payload))
+            # payload = json.dumps(str(payload))
             await websocket.send_json(payload)
     except (
         websockets.ConnectionClosed,
