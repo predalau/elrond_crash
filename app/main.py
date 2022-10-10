@@ -35,20 +35,21 @@ app.add_middleware(
 async def run_game():
     global game
     game = Game()
-
+    print(game.data.game_history.values[-1])
     while True:
         if hasattr(game, "isPaused") and game.isPaused:
             await asyncio.sleep(1)
             continue
-        while game.state == "bet":
+
+        if game.state == "bet":
             if datetime.now() > game.start_time:
                 game.toggle_state()
             else:
                 await asyncio.sleep(1)
 
-        while game.state == "play":
-            await asyncio.sleep(game.delay)
+        if game.state == "play":
             game.iterate_game()
+            await asyncio.sleep(0.1)
             if game.multiplier_now == -1:
                 await game.end_game()
 
@@ -67,59 +68,28 @@ async def ws(websocket: WebSocket):
         while True:
             if hasattr(game, "isPaused") and game.isPaused:
                 await asyncio.sleep(1)
-                payload = {"gameState": "paused", "multiplier": -1, "activeBets": []}
+                payload = {
+                    "gameState": "paused",
+                    "multiplier": -1,
+                    "activeBets": [],
+                }
                 payload = json.dumps(payload)
                 await websocket.send_json(payload)
                 continue
 
-            await asyncio.sleep(0.05)
+            await asyncio.sleep(0.2)
             payload = {
                 "gameState": game.state,
                 "multiplier": game.multiplier_now,
                 "activeBets": game.get_current_bets(),
             }
 
-            # payload = json.dumps(str(payload))
             await websocket.send_json(payload)
     except (
         websockets.ConnectionClosed,
         websockets.ConnectionClosedOK,
         websockets.exceptions.ConnectionClosedError,
     ):
-        pass
-
-
-@app.websocket("/wsAction")
-async def cashout_bet_socket(websocket: WebSocket):
-    global game
-    try:
-        await websocket.accept()
-        while True:
-            message = await websocket.recv()
-            address = message.address
-            mult = game.get_mult_now()
-            game.cashout(address, mult)
-
-    except Exception as e:
-        print(str(e))
-    finally:
-        pass
-
-
-@app.websocket("/wsMult")
-async def cashout(websocket: WebSocket):
-    global game
-    try:
-        await websocket.accept()
-        while True:
-            mult = await game.get_mult_now()
-            mult = bytes(str(mult), "utf-8")
-            mult = base58.b58encode(mult)
-            await websocket.send_json({"multiplier": mult})
-
-    except Exception as e:
-        print(str(e))
-    finally:
         pass
 
 
@@ -206,10 +176,11 @@ async def get_end_bets_ts():
 @app.post("/placeBet", tags=["bets"])
 async def place_bet(data: BetSchema):
     if game.state in ["play", "end"]:
-        raise HTTPException(
-            status_code=403,
-            detail="Can only place bet during BETTING stage",
-        )
+        return
+        # raise HTTPException(
+        #     status_code=403,
+        #     detail="Can only place bet during BETTING stage",
+        # )
 
     bet = Bet(data.walletAddress, data.betAmount)
     game.add_bet(bet)

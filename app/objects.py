@@ -13,6 +13,46 @@ import asyncio
 import threading
 
 
+class Bets:
+    """docstring for Bet"""
+
+    def __init__(self):
+        self.bets = []
+
+    def to_dataframe(self):
+        temp = []
+        for elem in self.bets:
+            temp.append(elem.to_dict())
+
+        return pd.DataFrame(temp)
+
+    def to_list_of_dict(self):
+        final = []
+        for bet in self.bets:
+            final.append(bet.to_dict())
+        return final
+
+    def to_list_of_tuples(self):
+        final = []
+        for bet in self.bets:
+            final.append(bet.to_tuple())
+
+        return final
+
+    def add_bet(self, bet):
+        final = self.bets
+        merged = False
+
+        for old_bet in final:
+            if old_bet.address == bet.address:
+                old_bet.merge(bet)
+                merged = True
+
+        if not merged:
+            final.append(bet)
+            setattr(self, "bets", final)
+
+
 class Bet:
     """docstring for Bet"""
 
@@ -24,22 +64,44 @@ class Bet:
         self.status = "open"
         self.haswon = False
         self.profit = 0
-
-    def to_dict(self):
-        cols = [
+        self.cols = [
             "timestamp",
+            "hash",
             "address",
             "amount",
             "haswon",
             "multiplier",
-            "status",
             "profit",
+            "status",
         ]
+
+    def to_dict(self):
+
         dic = {}
-        for col in cols:
+        for col in self.cols:
             if hasattr(self, col):
                 dic.update({col: getattr(self, col)})
         return dic
+
+    def to_tuple(self):
+        final = []
+        for col in self.cols:
+            if hasattr(self, col):
+                final.append(getattr(self, col))
+        return tuple(final)
+
+    def merge(self, bet):
+        setattr(self, "amount", self.amount + bet.amount)
+
+    def cashout(self, mult):
+        if mult <= 0:
+            setattr(self, "haswon", False)
+            setattr(self, "profit", -1 * mult)
+        else:
+            setattr(self, "haswon", False)
+            setattr(self, "profit", self.amount * mult)
+
+        setattr(self, "status", "closed")
 
 
 class Game:
@@ -53,7 +115,7 @@ class Game:
         self.state = "bet"
         self.delay = 0.1
         self.house_balance = self.get_house_balance()
-        self.bets = []
+        self.bets = Bets()
         self.start_time = datetime.now() + timedelta(seconds=10)
         self.set_mult_array()
 
@@ -67,8 +129,6 @@ class Game:
 
     def set_mult_array(self):
         assert hasattr(self, "multiplier")
-        setattr(self, "runtime_index", 0)
-        setattr(self, "multiplier_now", 1)
 
         if self.multiplier == 1:
             mult_array = [1, 1, -1]
@@ -76,6 +136,8 @@ class Game:
             mult_array = np.linspace(1, self.multiplier, num=int(self.multiplier * 50))
 
         setattr(self, "mult_array", mult_array)
+        setattr(self, "runtime_index", 0)
+        setattr(self, "multiplier_now", mult_array[0])
 
     def iterate_game(self):
         delays = [0.1, 0.04, 0.02]
@@ -84,34 +146,21 @@ class Game:
         assert hasattr(self, "multiplier_now")
         assert hasattr(self, "mult_array")
 
+        i = self.runtime_index
+        if i == -1:
+            print("i is -1")
+            return
+
         mult_now = self.multiplier_now
         player_potential_wins = 0
 
-        for elem in self.bets:
-            print(elem)
-            if elem["haswon"]:
-                player_potential_wins += elem["profit"]
+        for bet in self.bets.bets:
+            if bet.haswon:
+                player_potential_wins += bet.profit
             else:
-                player_potential_wins += elem["amount"] * mult_now
+                player_potential_wins += bet.amount * mult_now
 
-        if player_potential_wins > 0.05 * self.house_balance:
-            print("FORCED CRASH!")
-            setattr(self, "multiplier_now", -1)
-            setattr(self, "runtime_index", -1)
-            return
-
-        i = self.runtime_index
-        if i == -1:
-            return
-
-        if mult_now > 0 and mult_now < 2:
-            setattr(self, "delay", delays[0])
-        elif mult_now >= 2 and mult_now < 3.5:
-            setattr(self, "delay", delays[1])
-        elif mult_now >= 3.5:
-            setattr(self, "delay", delays[2])
-
-        if i == len(self.mult_array) - 1:
+        if i >= len(self.mult_array) - 1:
             setattr(self, "multiplier_now", -1)
             setattr(self, "runtime_index", -1)
         else:
@@ -122,7 +171,18 @@ class Game:
             )
             setattr(self, "runtime_index", i + 1)
 
-        return mult_now
+        if player_potential_wins > 0.05 * self.house_balance:
+            print("FORCED CRASH!")
+            setattr(self, "multiplier_now", -1)
+            setattr(self, "runtime_index", -1)
+            # self.end_game()
+
+        if mult_now > 0 and mult_now < 2:
+            setattr(self, "delay", delays[0])
+        elif mult_now >= 2 and mult_now < 3.5:
+            setattr(self, "delay", delays[1])
+        elif mult_now >= 3.5:
+            setattr(self, "delay", delays[2])
 
     def toggle_state(self):
         curr_state = self._state
@@ -171,17 +231,11 @@ class Game:
         return balance
 
     def cashout(self, wallet, mult, lost=False):
-        bets = self.bets
-        for bet in bets:
-            if bet["address"] == wallet:
-                if not lost:
-                    profit = bet["amount"] * mult
-                    bet.update({"haswon": True})
-                    bet.update({"profit": profit, "status": "closed"})
-                else:
-                    profit = -1 * bet["amount"]
-                    bet.update({"profit": profit, "status": "closed"})
-        setattr(self, "bets", bets)
+        for bet in self.bets.bets:
+            if not lost and bet.address == wallet:
+                bet.cashout(mult)
+            elif lost and bet.address == wallet:
+                bet.cashout(-1)
 
     def set_next_hash_and_mult(self):
         def get_result(game_hash):
@@ -237,7 +291,8 @@ class Game:
         return new_state
 
     def get_current_bets(self):
-        bets = pd.DataFrame(self.bets)
+        bets = self.bets.to_dataframe()
+
         if bets.empty:
             return []
 
@@ -249,8 +304,8 @@ class Game:
             state = player_bets.status.values[0]
             bet = {
                 "walletAddress": address,
-                "betAmount": total_bets,
-                "profit": np.sum(player_bets.profit),
+                "betAmount": float(total_bets),
+                "profit": float(np.sum(player_bets.profit)),
                 "state": state,
             }
             final.append(bet)
@@ -258,25 +313,29 @@ class Game:
         final.reverse()
         return final
 
+    def force_cashout(self):
+        for bet in self.bets.bets:
+            if bet.status == "open":
+                bet.cashout(self.multiplier_now)
+            else:
+                bet.cashout(-1)
+
     async def end_game(self):
         # identifier, timestamp, pool_size, multiplier,
         # bets_won, house_profit, house_balance
         self.toggle_state()
         await asyncio.sleep(1)
         pool_size = 0
-        for bet in self.bets:
-            pool_size += bet["amount"]
+        for bet in self.bets.bets:
+            pool_size += bet.amount
 
         player_profits = 0
-        losers = []
-        for bet in self.bets:
-            if bet["haswon"]:
-                player_profits += bet["amount"]
-            else:
-                losers.append(bet)
 
-        for bet in losers:
-            self.cashout(bet["address"], 0.0, lost=True)
+        for bet in self.bets.bets:
+            if bet.haswon:
+                player_profits += bet.amount
+
+        self.force_cashout()
 
         house_profits = pool_size - player_profits
 
@@ -288,6 +347,8 @@ class Game:
         self.save_game_history()
         self.save_bets_history()
         self.__init__()
+        self.bets.__init__()
+        print(self.bets.bets)
 
     def save_game_history(self):
         print("Saving history: ")
@@ -295,7 +356,7 @@ class Game:
 
     def save_bets_history(self):
         print("Saving bets: ")
-        bets = self.bets_to_list_of_tuples()
+        bets = self.bets.to_list_of_tuples()
         for elem in bets:
             self.data.db.add_row("bets", elem)
 
@@ -342,14 +403,16 @@ class Game:
             setattr(self, key, dic[key])
 
     def add_bet(self, bet: Bet):
-        if datetime.now() > self.start_time or self.state in ["play", "end"]:
-            self.toggle_state()
+        if self.state in ["play", "end"]:
             return False
 
-        new_bets = self.bets
-        new_bet = bet.to_dict()
-        new_bet.update({"hash": self.hash})
-        new_bets.append(new_bet)
-        print(new_bets)
-        setattr(self, "bets", new_bets)
+        setattr(bet, "hash", self.hash)
+        self.bets.add_bet(bet)
+
+        # new_bets = self.bets
+        # new_bet = bet.to_dict()
+        # new_bet.update({"hash": self.hash})
+        # new_bets.append(new_bet)
+        # print(new_bets)
+        # setattr(self, "bets", new_bets)
         return True
