@@ -348,7 +348,6 @@ class Game:
         self.save_bets_history()
         self.__init__()
         self.bets.__init__()
-        print(self.bets.bets)
 
     def save_game_history(self):
         print("Saving history: ")
