@@ -82,6 +82,7 @@ async def ws(websocket: WebSocket):
                 "gameState": game.state,
                 "multiplier": game.multiplier_now,
                 "activeBets": game.get_current_bets(),
+                "lastBets": game.data.get_last_game_bets(),
             }
 
             await websocket.send_json(payload)
@@ -145,32 +146,11 @@ async def check_balance(
     return payload["status"]
 
 
-@app.get("/getMultiplier", tags=["getters"])
-async def get_current_multiplier():
-    global game
-    mult = bytes(str(game.multiplier), "utf-8")
-    mult = base58.b58encode(mult)
-    return {"multiplier": mult}
-
-
 @app.get("/getCurrentGameState", tags=["dev", "getters"])
 async def get_game_state():
     global game
     state = game.state
     return {"state": state}
-
-
-@app.get("/getGameStateChange", tags=["getters"])
-async def change_game_state() -> str:
-    global game
-
-    state = await game.get_gamestate_change()
-    return state
-
-
-@app.get("/endBetsTimestamp", tags=["dev", "getters"])
-async def get_end_bets_ts():
-    return game.start_time.isoformat()
 
 
 @app.post("/placeBet", tags=["bets"])
@@ -195,7 +175,7 @@ async def cashout(data: CashoutBet):
             detail="Can only cashout bet during PLAYING stage",
         )
 
-    return game.cashout(data.walletAddress, data.multiplier)
+    return game.cashout(data.walletAddress)
 
 
 @app.post("/crashGame", tags=["actions"])
@@ -231,6 +211,6 @@ async def pause_game():
 
 
 @app.post("/resumeGame", tags=["dev", "actions"])
-async def pause_game():
+async def resume_game():
     global game
     setattr(game, "isPaused", False)

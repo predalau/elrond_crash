@@ -230,10 +230,10 @@ class Game:
 
         return balance
 
-    def cashout(self, wallet, mult, lost=False):
+    def cashout(self, wallet, lost=False):
         for bet in self.bets.bets:
             if not lost and bet.address == wallet:
-                bet.cashout(mult)
+                bet.cashout(self.multiplier_now)
             elif lost and bet.address == wallet:
                 bet.cashout(-1)
 
