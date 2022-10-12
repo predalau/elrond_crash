@@ -96,9 +96,9 @@ class Bet:
     def cashout(self, mult):
         if mult <= 0:
             setattr(self, "haswon", False)
-            setattr(self, "profit", -1 * mult)
+            setattr(self, "profit", -1 * self.amount)
         else:
-            setattr(self, "haswon", False)
+            setattr(self, "haswon", True)
             setattr(self, "profit", self.amount * mult)
 
         setattr(self, "status", "closed")
@@ -316,11 +316,9 @@ class Game:
     def force_cashout(self):
         for bet in self.bets.bets:
             if bet.status == "open":
-                bet.cashout(self.multiplier_now)
-            else:
                 bet.cashout(-1)
 
-    async def end_game(self):
+    async def end_game(self, manual=False):
         # identifier, timestamp, pool_size, multiplier,
         # bets_won, house_profit, house_balance
         self.toggle_state()
@@ -343,6 +341,9 @@ class Game:
         setattr(self, "house_profit", house_profits)
         setattr(self, "pool_size", pool_size)
         setattr(self, "house_balance", self.house_balance + house_profits)
+
+        if manual:
+            print("MANUALLY crashed the game")
 
         self.save_game_history()
         self.save_bets_history()

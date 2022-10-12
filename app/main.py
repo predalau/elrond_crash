@@ -35,7 +35,6 @@ app.add_middleware(
 async def run_game():
     global game
     game = Game()
-    print(game.data.game_history.values[-1])
     while True:
         if hasattr(game, "isPaused") and game.isPaused:
             await asyncio.sleep(1)
@@ -180,17 +179,26 @@ async def cashout(data: CashoutBet):
 
 @app.post("/crashGame", tags=["actions"])
 async def end_game():
-    global game
     try:
-        await game.end_game()
-        game.__init__()
+        if game.state != "play":
+            raise HTTPException(
+                status_code=403,
+                detail="Can only crash game during PLAY state",
+            )
+
+        else:
+            setattr(game, "multiplier_now", -1)
+            await asyncio.sleep(2)
+            if game.state != "play":
+                return {"status": "success"}
+            else:
+                return {"status": "fail"}
 
     except (psycopg2.InterfaceError, psycopg2.OperationalError) as e:
         print("Connection ERROR! attempting to reconnect")
         print(e)
         game.data.db.__init__()
-        await game.end_game()
-        game.__init__()
+        game.end_game(manual=True)
 
 
 @app.post("/toggleGameState", tags=["dev", "actions"])
