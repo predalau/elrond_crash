@@ -61,7 +61,7 @@ class Bet:
         self.amount = amount
         self.timestamp = datetime.now().isoformat()
         self.multiplier = 0
-        self.status = "open"
+        self.state = "open"
         self.haswon = False
         self.profit = 0
         self.cols = [
@@ -72,7 +72,7 @@ class Bet:
             "haswon",
             "multiplier",
             "profit",
-            "status",
+            "state",
         ]
 
     def to_dict(self):
@@ -101,7 +101,7 @@ class Bet:
             setattr(self, "haswon", True)
             setattr(self, "profit", self.amount * mult)
 
-        setattr(self, "status", "closed")
+        setattr(self, "state", "closed")
 
 
 class Game:
@@ -291,22 +291,21 @@ class Game:
         return new_state
 
     def get_current_bets(self):
-        bets = self.bets.to_dataframe()
-
-        if bets.empty:
+        if len(self.bets.bets) == 0:
             return []
 
-        unique_ads = bets.address.unique()
         final = []
-        for address in unique_ads:
-            player_bets = bets[bets.address == address]
-            total_bets = np.sum(player_bets.amount)
-            state = player_bets.status.values[0]
+        for bet in self.bets.bets:
+            if bet.state == "open":
+                profit = float(np.sum(bet.amount) * self.multiplier_now)
+            else:
+                profit = bet.profit
+
             bet = {
-                "walletAddress": address,
-                "betAmount": float(total_bets),
-                "profit": float(np.sum(player_bets.profit)),
-                "state": state,
+                "walletAddress": bet.address,
+                "betAmount": bet.amount,
+                "profit": float(format(profit, ".2f")),
+                "state": bet.state,
             }
             final.append(bet)
 
@@ -315,7 +314,7 @@ class Game:
 
     def force_cashout(self):
         for bet in self.bets.bets:
-            if bet.status == "open":
+            if bet.state == "open":
                 bet.cashout(-1)
 
     async def end_game(self, manual=False):
