@@ -241,25 +241,25 @@ class Game:
         def get_result(game_hash):
             hm = hmac.new(str.encode(game_hash), b"", hashlib.sha256)
             hm.update(game_hash.encode("utf-8"))
-            hashish = hm.hexdigest()
+            gme_hash = hm.hexdigest()
 
-            if int(hashish, 16) % 33 == 0:
-                return (hashish, 1)
+            if int(gme_hash, 16) % 33 == 0:
+                return (gme_hash, 1)
 
-            h = int(hashish[:13], 16)
+            h = int(gme_hash[:13], 16)
             e = 2**52
             result = (((100 * e - h) / (e - h)) // 1) / 100.0
-            return (hashish, result)
+            return (gme_hash, result)
 
         if self.data.game_history.empty:
-            hashish, multiplier = get_result(SALT_HASH)
+            gme_hash, multiplier = get_result(SALT_HASH)
         else:
             last_hash = self.data.game_history["hash"].values[-1]
-            hashish, multiplier = get_result(last_hash)
+            gme_hash, multiplier = get_result(last_hash)
 
-        setattr(self, "hash", hashish)
+        setattr(self, "hash", gme_hash)
         setattr(self, "multiplier", multiplier)
-        return (hashish, multiplier)
+        return (gme_hash, multiplier)
 
     async def countdown_bets_timer(self):
         while True:
