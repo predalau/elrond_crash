@@ -20,7 +20,6 @@ nest_asyncio.apply()
 
 app = FastAPI()
 
-# global game
 global game
 
 app.add_middleware(

@@ -1,10 +1,5 @@
 from time import sleep
-
-# import pandas as pd
 import cloudscraper
-from datetime import datetime, timedelta
-from discord import Embed, Webhook, RequestsWebhookAdapter
-from bs4 import BeautifulSoup
 from vars import *
 import json
 

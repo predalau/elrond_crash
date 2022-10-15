@@ -1,8 +1,7 @@
-from time import time
+from datetime import datetime
 from vars import (
     DATABASE_PATH,
     DATABASE_MAP,
-    BETS_PATH,
     DB_HOST,
     DB_PORT,
     DB_USER,
@@ -10,7 +9,6 @@ from vars import (
 )
 import psycopg2
 import pandas as pd
-import os
 
 
 class ElrondCrashDatabase:
@@ -21,7 +19,6 @@ class ElrondCrashDatabase:
         self.map = DATABASE_MAP
         self.conn = self._connect()
         self.cur = self.conn.cursor()
-        # self.last_rows = self.get_last_rows()
 
     def _connect(self):
         """
@@ -46,7 +43,7 @@ class ElrondCrashDatabase:
         Params:
         table (str): e.x. 'deadrare_coll_stats'
         cols (list of dict): List of dicts containing name and
-            dtype of the table' columns
+            dtype of the table's columns
 
         Returns:
         None
@@ -180,7 +177,6 @@ class GameHistory:
         self.map = DATABASE_MAP
         self.history_path = DATABASE_PATH
         self.db = ElrondCrashDatabase()
-        self.bets_path = BETS_PATH
         self.game_history = self._import_game_history()
         self.bet_history = self._import_bet_history()
         self.last_ten_multipliers = self.get_last_multipliers()
@@ -232,7 +228,7 @@ class GameHistory:
 
     def add_new_game(self, game):
         last_game_id = self.game_history.loc[-1].id
-        timestamp = time.now()
+        timestamp = datetime.now()
         game.update(
             {
                 "id": last_game_id + 1,

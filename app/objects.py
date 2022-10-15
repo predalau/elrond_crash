@@ -1,46 +1,41 @@
 from database import GameHistory
 from datetime import datetime, timedelta
-from time import sleep
 from vars import STARTING_WALLET_AMT, SALT_HASH  # , REWARDS_WALLET
-from helpers import get_http_request
-import json
 import hashlib
-import random
 import hmac
 import pandas as pd
 import numpy as np
 import asyncio
-import threading
 
 
 class Bets:
     """docstring for Bet"""
 
     def __init__(self):
-        self.bets = []
+        self.to_list = []
 
     def to_dataframe(self):
         temp = []
-        for elem in self.bets:
+        for elem in self.to_list:
             temp.append(elem.to_dict())
 
         return pd.DataFrame(temp)
 
     def to_list_of_dict(self):
         final = []
-        for bet in self.bets:
+        for bet in self.to_list:
             final.append(bet.to_dict())
         return final
 
     def to_list_of_tuples(self):
         final = []
-        for bet in self.bets:
+        for bet in self.to_list:
             final.append(bet.to_tuple())
 
         return final
 
     def add_bet(self, bet):
-        final = self.bets
+        final = self.to_list
         merged = False
 
         for old_bet in final:
@@ -108,7 +103,7 @@ class Game:
     """docstring for Game"""
 
     def __init__(self):
-        # self.house_address = REWARDS_WALLET
+        # todo self.house_address = REWARDS_WALLET
         self.data = GameHistory()
         self.identifier = self._get_id()
         self.set_next_hash_and_mult()
@@ -133,7 +128,7 @@ class Game:
         if self.multiplier == 1:
             mult_array = [1, 1, -1]
         else:
-            mult_array = np.linspace(1, self.multiplier, num=int(self.multiplier * 50))
+            mult_array = np.arange(1, self.multiplier + 0.01, 0.01)
 
         setattr(self, "mult_array", mult_array)
         setattr(self, "runtime_index", 0)
@@ -154,7 +149,7 @@ class Game:
         mult_now = self.multiplier_now
         player_potential_wins = 0
 
-        for bet in self.bets.bets:
+        for bet in self.bets.to_list:
             if bet.haswon:
                 player_potential_wins += bet.profit
             else:
@@ -175,7 +170,6 @@ class Game:
             print("FORCED CRASH!")
             setattr(self, "multiplier_now", -1)
             setattr(self, "runtime_index", -1)
-            # self.end_game()
 
         if mult_now > 0 and mult_now < 2:
             setattr(self, "delay", delays[0])
@@ -218,7 +212,7 @@ class Game:
         elif self.state == "play":
             setattr(self, "state", "bet")
 
-    def get_house_balance(self):
+    def get_house_balance(self): # todo Change to actual house wallet
         if self.data.game_history.empty:
             balance = STARTING_WALLET_AMT
         else:
@@ -231,7 +225,7 @@ class Game:
         return balance
 
     def cashout(self, wallet, lost=False):
-        for bet in self.bets.bets:
+        for bet in self.bets.to_list:
             if not lost and bet.address == wallet:
                 bet.cashout(self.multiplier_now)
             elif lost and bet.address == wallet:
@@ -241,15 +235,15 @@ class Game:
         def get_result(game_hash):
             hm = hmac.new(str.encode(game_hash), b"", hashlib.sha256)
             hm.update(game_hash.encode("utf-8"))
-            gme_hash = hm.hexdigest()
+            gme_hex = hm.hexdigest()
 
-            if int(gme_hash, 16) % 33 == 0:
-                return (gme_hash, 1)
+            if int(gme_hex, 16) % 33 == 0:
+                return gme_hex, 1
 
-            h = int(gme_hash[:13], 16)
+            h = int(gme_hex[:13], 16)
             e = 2**52
             result = (((100 * e - h) / (e - h)) // 1) / 100.0
-            return (gme_hash, result)
+            return gme_hex, result
 
         if self.data.game_history.empty:
             gme_hash, multiplier = get_result(SALT_HASH)
@@ -259,7 +253,7 @@ class Game:
 
         setattr(self, "hash", gme_hash)
         setattr(self, "multiplier", multiplier)
-        return (gme_hash, multiplier)
+        return gme_hash, multiplier
 
     async def countdown_bets_timer(self):
         while True:
@@ -269,13 +263,6 @@ class Game:
             await asyncio.sleep(1)
 
     async def countdown_bets(self):
-        # thread = threading.Thread(target=self.countdown_bets_timer)
-        # thread.start()
-        # thread.join()
-        # loop = asyncio.new_event_loop()
-        # asyncio.set_event_loop(loop)
-        # loop.run_until_complete(self.countdown_bets_timer())
-        # loop.close()
         return await self.countdown_bets_timer()
 
     async def has_state_changed(self, state):
@@ -291,11 +278,11 @@ class Game:
         return new_state
 
     def get_current_bets(self):
-        if len(self.bets.bets) == 0:
+        if len(self.bets.to_list) == 0:
             return []
 
         final = []
-        for bet in self.bets.bets:
+        for bet in self.bets.to_list:
             if bet.state == "open":
                 profit = float(np.sum(bet.amount) * self.multiplier_now)
             else:
@@ -313,22 +300,20 @@ class Game:
         return final
 
     def force_cashout(self):
-        for bet in self.bets.bets:
+        for bet in self.bets.to_list:
             if bet.state == "open":
                 bet.cashout(-1)
 
-    async def end_game(self, manual=False):
-        # identifier, timestamp, pool_size, multiplier,
-        # bets_won, house_profit, house_balance
+    async def end_game(self, manual=False): # todo add SC call with winning bets
         self.toggle_state()
         await asyncio.sleep(1)
         pool_size = 0
-        for bet in self.bets.bets:
+        for bet in self.bets.to_list:
             pool_size += bet.amount
 
         player_profits = 0
 
-        for bet in self.bets.bets:
+        for bet in self.bets.to_list:
             if bet.haswon:
                 player_profits += bet.amount
 
@@ -385,14 +370,11 @@ class Game:
     ):
         cols = self.data.map["bets"].keys()
         final = []
-        for elem in self.bets:
+        for elem in self.bets.to_list:
             dic = []
             for col in cols:
                 if col in elem.keys():
-                    if col == "timestamp":
-                        dic.append(elem[col])
-                    else:
-                        dic.append(elem[col])
+                    dic.append(elem[col])
 
             final.append(tuple(dic))
         return final

@@ -5,7 +5,6 @@ load_dotenv()
 
 DELAY = 0.1
 DATABASE_PATH = "db-crash-game"
-BETS_PATH = "bets.csv"
 STARTING_WALLET_AMT = 100
 SALT_HASH = os.getenv("HASH")
 DB_HOST = os.getenv("DB_HOST")
