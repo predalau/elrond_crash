@@ -2,15 +2,14 @@ import psycopg2
 import nest_asyncio
 from typing import Dict, List
 from fastapi import FastAPI, WebSocket, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from schemas import BetSchema, CashoutBet
 from helpers import check_player_balance
 from objects import Game, Bet
-from fastapi.middleware.cors import CORSMiddleware
 from datetime import datetime
 import json
 import websockets
 import asyncio
-
 
 nest_asyncio.apply()
 
@@ -21,6 +20,7 @@ nest_asyncio.apply()
 app = FastAPI()
 
 global game
+game = Game()
 
 app.add_middleware(
     CORSMiddleware,
@@ -33,7 +33,6 @@ app.add_middleware(
 
 async def run_game():
     global game
-    game = Game()
     while True:
         if hasattr(game, "isPaused") and game.isPaused:
             await asyncio.sleep(1)
@@ -85,9 +84,9 @@ async def ws(websocket: WebSocket):
 
             await websocket.send_json(payload)
     except (
-        websockets.ConnectionClosed,
-        websockets.ConnectionClosedOK,
-        websockets.exceptions.ConnectionClosedError,
+            websockets.ConnectionClosed,
+            websockets.ConnectionClosedOK,
+            websockets.ConnectionClosedError,
     ):
         pass
 
@@ -135,9 +134,9 @@ async def get_last_ten_multipliers():
 
 @app.get("/checkPlayerBalance/{walletAddress}/{balance}/{signer}")
 async def check_balance(
-    walletAddress: str,
-    balance: float,
-    signer: str,
+        walletAddress: str,
+        balance: float,
+        signer: str,
 ) -> bool:
     # user = UserSchema(walletAddress=walletAddress, balance=balance, signer=signer)
     payload = {"status": check_player_balance(walletAddress, balance)}
@@ -154,11 +153,10 @@ async def get_game_state():
 @app.post("/placeBet", tags=["bets"])
 async def place_bet(data: BetSchema):
     if game.state in ["play", "end"]:
-        return
-        # raise HTTPException(
-        #     status_code=403,
-        #     detail="Can only place bet during BETTING stage",
-        # )
+        raise HTTPException(
+            status_code=403,
+            detail="Can only place bet during BETTING stage",
+        )
 
     bet = Bet(data.walletAddress, data.betAmount)
     game.add_bet(bet)

@@ -1,6 +1,6 @@
 from database import GameHistory
-from datetime import datetime, timedelta
 from vars import STARTING_WALLET_AMT, SALT_HASH  # , REWARDS_WALLET
+from datetime import datetime, timedelta
 import hashlib
 import hmac
 import pandas as pd
@@ -212,7 +212,7 @@ class Game:
         elif self.state == "play":
             setattr(self, "state", "bet")
 
-    def get_house_balance(self): # todo Change to actual house wallet
+    def get_house_balance(self):  # todo Change to actual house wallet
         if self.data.game_history.empty:
             balance = STARTING_WALLET_AMT
         else:
@@ -241,7 +241,7 @@ class Game:
                 return gme_hex, 1
 
             h = int(gme_hex[:13], 16)
-            e = 2**52
+            e = 2 ** 52
             result = (((100 * e - h) / (e - h)) // 1) / 100.0
             return gme_hex, result
 
@@ -304,7 +304,7 @@ class Game:
             if bet.state == "open":
                 bet.cashout(-1)
 
-    async def end_game(self, manual=False): # todo add SC call with winning bets
+    async def end_game(self, manual=False):  # todo add SC call with winning bets
         self.toggle_state()
         await asyncio.sleep(1)
         pool_size = 0
@@ -353,7 +353,7 @@ class Game:
         return dic
 
     def to_tuple(
-        self,
+            self,
     ):
         cols = self.data.map["games"].keys()
         dic = []
@@ -366,7 +366,7 @@ class Game:
         return tuple(dic)
 
     def bets_to_list_of_tuples(
-        self,
+            self,
     ):
         cols = self.data.map["bets"].keys()
         final = []
