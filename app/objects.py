@@ -111,7 +111,7 @@ class Game:
         self.delay = 0.1
         self.house_balance = self.get_house_balance()
         self.bets = Bets()
-        self.start_time = datetime.now() + timedelta(seconds=10)
+        self.start_time = datetime.now() + timedelta(seconds=5)
         self.set_mult_array()
 
     @property
@@ -177,6 +177,25 @@ class Game:
             setattr(self, "delay", delays[1])
         elif mult_now >= 3.5:
             setattr(self, "delay", delays[2])
+
+
+    def get_countdown_as_str(self):
+        if self.state != "bet":
+            return "00.0"
+        else:
+            cdown = self.start_time - datetime.now()
+            mm, ss = divmod(cdown.seconds, 60)
+            hh, mm = divmod(mm, 60)
+            if mm == 0:
+                s = "%02d.%2d" % (ss, cdown.microseconds / 10000)
+            elif mm == 59:
+                return "00.0"
+            elif ss == 0:
+                return "00." + str(cdown.microseconds/ 10000)
+            else:
+                s = "%02d:%02d.%2d" % (mm, ss, cdown.microseconds / 10000)
+
+            return s
 
     def toggle_state(self):
         curr_state = self._state
@@ -306,7 +325,7 @@ class Game:
 
     async def end_game(self, manual=False):  # todo add SC call with winning bets
         self.toggle_state()
-        await asyncio.sleep(1)
+        await asyncio.sleep(5)
         pool_size = 0
         for bet in self.bets.to_list:
             pool_size += bet.amount
