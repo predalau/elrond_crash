@@ -5,7 +5,9 @@ from fastapi import FastAPI, WebSocket, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from schemas import BetSchema, CashoutBet
 from helpers import check_player_balance
+from elrond import get_all_bets
 from objects import Game, Bet
+from vars import  DELAY, BETTING_DELAY
 from datetime import datetime
 import json
 import websockets
@@ -42,11 +44,13 @@ async def run_game():
             if datetime.now() > game.start_time:
                 game.toggle_state()
             else:
-                await asyncio.sleep(1)
+                new_bets = get_all_bets()
+                game.bets.update(new_bets)
+                await asyncio.sleep(BETTING_DELAY)
 
         if game.state == "play":
             game.iterate_game()
-            await asyncio.sleep(0.1)
+            await asyncio.sleep(DELAY)
             if game.multiplier_now == -1:
                 await game.end_game()
 

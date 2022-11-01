@@ -4,6 +4,8 @@ import os
 load_dotenv()
 
 DELAY = 0.1
+BETTING_DELAY = 1
+BETTING_STAGE_DURATION = 5
 DATABASE_PATH = "db-crash-game"
 STARTING_WALLET_AMT = 100
 SALT_HASH = os.getenv("HASH")
@@ -12,6 +14,8 @@ DB_PORT = int(os.getenv("DB_PORT"))
 DB_PASS = os.getenv("DB_PASS")
 DB_USER = os.getenv("DB_USER")
 # REWARDS_WALLET = os.getenv("REWARDS_WALLET")
+SC_ADDRESS = os.getenv("SC_ADDRESS")
+CHAIN_ID = "D"
 DATABASE_MAP = {
     "games": {
         "identifier": [],
