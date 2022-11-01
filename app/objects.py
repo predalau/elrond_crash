@@ -171,9 +171,9 @@ class Game:
             setattr(self, "multiplier_now", -1)
             setattr(self, "runtime_index", -1)
 
-        if mult_now > 0 and mult_now < 2:
+        if 0 < mult_now < 2:
             setattr(self, "delay", delays[0])
-        elif mult_now >= 2 and mult_now < 3.5:
+        elif 2 <= mult_now < 3.5:
             setattr(self, "delay", delays[1])
         elif mult_now >= 3.5:
             setattr(self, "delay", delays[2])

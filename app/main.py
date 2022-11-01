@@ -135,12 +135,12 @@ async def get_last_ten_multipliers():
 
 @app.get("/checkPlayerBalance/{walletAddress}/{balance}/{signer}")
 async def check_balance(
-        walletAddress: str,
+        wallet_address: str,
         balance: float,
         signer: str,
 ) -> bool:
     # user = UserSchema(walletAddress=walletAddress, balance=balance, signer=signer)
-    payload = {"status": check_player_balance(walletAddress, balance)}
+    payload = {"status": check_player_balance(wallet_address, balance)}
     return payload["status"]
 
 
@@ -196,11 +196,16 @@ async def end_game():
         print("Connection ERROR! attempting to reconnect")
         print(e)
         game.data.db.__init__()
-        game.end_game(manual=True)
+        setattr(game, "multiplier_now", -1)
+        await asyncio.sleep(2)
+        if game.state != "play":
+            return {"status": "success"}
+        else:
+            return {"status": "fail"}
 
 
 @app.post("/toggleGameState", tags=["dev", "actions"])
-async def toggle_State():
+async def toggle_state():
     global game
     old_state = game.state
     game.toggle_state()
