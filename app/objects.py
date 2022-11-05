@@ -1,6 +1,7 @@
 from database import GameHistory
-from vars import STARTING_WALLET_AMT, SALT_HASH  # , REWARDS_WALLET
+from vars import STARTING_WALLET_AMT, SALT_HASH, BETTING_STAGE_DURATION  # , REWARDS_WALLET
 from datetime import datetime, timedelta
+from elrond import ELROND_PROXY, ELROND_ACCOUNT, send_rewards
 import hashlib
 import hmac
 import pandas as pd
@@ -13,6 +14,20 @@ class Bets:
 
     def __init__(self):
         self.to_list = []
+
+    def to_dict(self):
+        final = {}
+        for bet in self.to_list:
+            final.update({bet.address: bet.amount})
+        setattr(self, "to_dict", final)
+        return self.to_dict
+
+    def update(self, new_bets: dict):
+        if not new_bets:
+            return
+
+        new_bets = [Bet(addr, amount) for addr, amount in new_bets.items()]
+        setattr(self, "to_list", new_bets)
 
     def to_dataframe(self):
         temp = []
@@ -27,10 +42,10 @@ class Bets:
             final.append(bet.to_dict())
         return final
 
-    def to_list_of_tuples(self):
+    def to_list_of_tuples(self, gamehash):
         final = []
         for bet in self.to_list:
-            final.append(bet.to_tuple())
+            final.append(bet.to_tuple(gamehash))
 
         return final
 
@@ -45,7 +60,7 @@ class Bets:
 
         if not merged:
             final.append(bet)
-            setattr(self, "bets", final)
+            setattr(self, "to_list", final)
 
 
 class Bet:
@@ -78,11 +93,13 @@ class Bet:
                 dic.update({col: getattr(self, col)})
         return dic
 
-    def to_tuple(self):
+    def to_tuple(self, gamehash):
         final = []
         for col in self.cols:
             if hasattr(self, col):
                 final.append(getattr(self, col))
+            elif col == "hash":
+                final.append(gamehash)
         return tuple(final)
 
     def merge(self, bet):
@@ -111,8 +128,9 @@ class Game:
         self.delay = 0.1
         self.house_balance = self.get_house_balance()
         self.bets = Bets()
-        self.start_time = datetime.now() + timedelta(seconds=5)
+        self.start_time = datetime.now() + timedelta(seconds=BETTING_STAGE_DURATION)
         self.set_mult_array()
+        self._connect_elrond_wallet()
 
     @property
     def _state(self):
@@ -121,6 +139,10 @@ class Game:
     @_state.setter
     def _state(self, a):
         self.state = a
+
+    def _connect_elrond_wallet(self):
+        setattr(self, "elrond_account", ELROND_ACCOUNT)
+        setattr(self, "elrond_proxy", ELROND_PROXY)
 
     def set_mult_array(self):
         assert hasattr(self, "multiplier")
@@ -171,9 +193,9 @@ class Game:
             setattr(self, "multiplier_now", -1)
             setattr(self, "runtime_index", -1)
 
-        if mult_now > 0 and mult_now < 2:
+        if 0 < mult_now < 2:
             setattr(self, "delay", delays[0])
-        elif mult_now >= 2 and mult_now < 3.5:
+        elif 2 <= mult_now < 3.5:
             setattr(self, "delay", delays[1])
         elif mult_now >= 3.5:
             setattr(self, "delay", delays[2])
@@ -319,9 +341,14 @@ class Game:
         return final
 
     def force_cashout(self):
+        adds = {}
         for bet in self.bets.to_list:
             if bet.state == "open":
                 bet.cashout(-1)
+                adds.update({bet.address: 0})
+            else:
+                adds.update({bet.address: bet.profit})
+        send_rewards(self.elrond_account, adds)
 
     async def end_game(self, manual=False):  # todo add SC call with winning bets
         self.toggle_state()
@@ -351,7 +378,6 @@ class Game:
         self.save_game_history()
         self.save_bets_history()
         self.__init__()
-        self.bets.__init__()
 
     def save_game_history(self):
         print("Saving history: ")
@@ -359,7 +385,8 @@ class Game:
 
     def save_bets_history(self):
         print("Saving bets: ")
-        bets = self.bets.to_list_of_tuples()
+        bets = self.bets.to_list_of_tuples(self.hash)
+        print(bets)
         for elem in bets:
             self.data.db.add_row("bets", elem)
 

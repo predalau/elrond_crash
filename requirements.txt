@@ -47,3 +47,4 @@ watchfiles==0.17.0
 websockets==10.3
 yarl==1.8.1
 httpx~=0.23.0
+erdpy~=2.0.3
