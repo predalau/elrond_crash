@@ -345,8 +345,9 @@ class Game:
         for bet in self.bets.to_list:
             if bet.state == "open":
                 bet.cashout(-1)
+                adds.update({bet.address: 0})
             else:
-                adds.update({bet.address: bet.amount})
+                adds.update({bet.address: bet.profit})
         send_rewards(self.elrond_account, adds)
 
     async def end_game(self, manual=False):  # todo add SC call with winning bets
