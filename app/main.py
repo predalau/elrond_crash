@@ -7,7 +7,7 @@ from schemas import BetSchema, CashoutBet
 from helpers import check_player_balance
 from elrond import get_all_bets
 from objects import Game, Bet
-from vars import  DELAY, BETTING_DELAY
+from vars import DELAY, BETTING_DELAY
 from datetime import datetime
 import json
 import websockets

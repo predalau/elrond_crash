@@ -3,9 +3,9 @@ import os
 
 load_dotenv()
 
-DELAY = 0.1
+DELAY = 0.05
 BETTING_DELAY = 1
-BETTING_STAGE_DURATION = 45
+BETTING_STAGE_DURATION = 30
 DATABASE_PATH = "db-crash-game"
 STARTING_WALLET_AMT = 100
 SALT_HASH = os.getenv("HASH")
