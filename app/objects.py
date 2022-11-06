@@ -125,6 +125,7 @@ class Game:
         self.identifier = self._get_id()
         self.set_next_hash_and_mult()
         self.state = "bet"
+        self.delay = 0.1
         self.house_balance = self.get_house_balance()
         self.bets = Bets()
         self.start_time = datetime.now() + timedelta(seconds=BETTING_STAGE_DURATION)

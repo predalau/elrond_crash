@@ -50,7 +50,7 @@ async def run_game():
 
         if game.state == "play":
             game.iterate_game()
-            await asyncio.sleep(DELAY)
+            await asyncio.sleep(game.delay)
             if game.multiplier_now == -1:
                 await game.end_game()
 
