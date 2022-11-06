@@ -1,17 +1,18 @@
-import psycopg2
-import nest_asyncio
+import asyncio
+import json
+from datetime import datetime
 from typing import Dict, List
+
+import nest_asyncio
+import psycopg2
 from fastapi import FastAPI, WebSocket, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from schemas import BetSchema, CashoutBet
-from helpers import check_player_balance
+
 from elrond import get_all_bets
+from helpers import check_player_balance
 from objects import Game, Bet
+from schemas import BetSchema, CashoutBet
 from vars import DELAY, BETTING_DELAY
-from datetime import datetime
-import json
-import websockets
-import asyncio
 
 nest_asyncio.apply()
 
@@ -21,7 +22,6 @@ nest_asyncio.apply()
 
 app = FastAPI()
 
-global game
 game = Game()
 
 app.add_middleware(
@@ -89,10 +89,10 @@ async def ws(websocket: WebSocket):
 
             await websocket.send_json(payload)
     except Exception as e:
-            # websockets.ConnectionClosed,
-            # websockets.ConnectionClosedOK,
-            # websockets.ConnectionClosedError,
-            #
+        # websockets.ConnectionClosed,
+        # websockets.ConnectionClosedOK,
+        # websockets.ConnectionClosedError,
+        #
         print(str(e))
 
 
