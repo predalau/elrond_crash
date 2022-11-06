@@ -13,10 +13,12 @@ elif CHAIN_ID == "T":
 else:
     sc_gateway = f"https://gateway.elrond.com/"  # address/{SC_ADDRESS}/keys"
 
-ELROND_PROXY = ElrondProxy(sc_gateway)
-ELROND_ACCOUNT = Account(pem_file="wallet.pem")
-ELROND_ACCOUNT.sync_nonce(ELROND_PROXY)
 
+def get_proxy_and_account():
+    ELROND_PROXY = ElrondProxy(sc_gateway)
+    ELROND_ACCOUNT = Account(pem_file="wallet.pem")
+    ELROND_ACCOUNT.sync_nonce(ELROND_PROXY)
+    return (ELROND_PROXY, ELROND_ACCOUNT)
 
 def int_to_hex(number: int) -> str:
     hex_nr = hex(number)[2:]
@@ -61,8 +63,8 @@ def place_bet(sender: Account, amount):
     tx.gasLimit = 6000000
     tx.version = config.get_tx_version()
     tx.sign(sender)
-    sent_tx = tx.send_wait_result(ELROND_PROXY, timeout=60)
-    print(sent_tx)
+    # sent_tx = tx.send_wait_result(ELROND_PROXY, timeout=60)
+    # print(sent_tx)
 
 
 def send_rewards(sender: Account, adds: dict):
@@ -79,5 +81,7 @@ def send_rewards(sender: Account, adds: dict):
     tx.gasLimit = (len(adds.keys()) + 1) * 6000000
     tx.version = config.get_tx_version()
     tx.sign(sender)
-    sent_tx = tx.send_wait_result(ELROND_PROXY, timeout=60)
+    elrond_proxy, elrond_account = get_proxy_and_account()
+    del elrond_account
+    sent_tx = tx.send_wait_result(elrond_proxy, timeout=60)
     print(sent_tx.__dict__)

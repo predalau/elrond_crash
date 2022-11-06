@@ -88,12 +88,12 @@ async def ws(websocket: WebSocket):
             }
 
             await websocket.send_json(payload)
-    except (
-            websockets.ConnectionClosed,
-            websockets.ConnectionClosedOK,
-            websockets.ConnectionClosedError,
-    ):
-        pass
+    except Exception as e:
+            # websockets.ConnectionClosed,
+            # websockets.ConnectionClosedOK,
+            # websockets.ConnectionClosedError,
+            #
+        print(str(e))
 
 
 @app.get(

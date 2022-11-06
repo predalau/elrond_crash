@@ -1,7 +1,7 @@
 from database import GameHistory
 from vars import STARTING_WALLET_AMT, SALT_HASH, BETTING_STAGE_DURATION  # , REWARDS_WALLET
 from datetime import datetime, timedelta
-from elrond import ELROND_PROXY, ELROND_ACCOUNT, send_rewards
+from elrond import send_rewards
 import hashlib
 import hmac
 import pandas as pd
@@ -125,7 +125,6 @@ class Game:
         self.identifier = self._get_id()
         self.set_next_hash_and_mult()
         self.state = "bet"
-        self.delay = 0.1
         self.house_balance = self.get_house_balance()
         self.bets = Bets()
         self.start_time = datetime.now() + timedelta(seconds=BETTING_STAGE_DURATION)
@@ -141,8 +140,10 @@ class Game:
         self.state = a
 
     def _connect_elrond_wallet(self):
-        setattr(self, "elrond_account", ELROND_ACCOUNT)
-        setattr(self, "elrond_proxy", ELROND_PROXY)
+        from elrond import get_proxy_and_account
+        elrond_proxy, elrond_account = get_proxy_and_account()
+        setattr(self, "elrond_account", elrond_account)
+        setattr(self, "elrond_proxy", elrond_proxy)
 
     def set_mult_array(self):
         assert hasattr(self, "multiplier")
@@ -170,8 +171,10 @@ class Game:
 
         mult_now = self.multiplier_now
         player_potential_wins = 0
+        total_bets = 0
 
         for bet in self.bets.to_list:
+            total_bets += bet.amount
             if bet.haswon:
                 player_potential_wins += bet.profit
             else:
@@ -188,7 +191,7 @@ class Game:
             )
             setattr(self, "runtime_index", i + 1)
 
-        if player_potential_wins > 0.05 * self.house_balance:
+        if player_potential_wins > 0.1 * (self.house_balance + total_bets):
             print("FORCED CRASH!")
             setattr(self, "multiplier_now", -1)
             setattr(self, "runtime_index", -1)
@@ -199,7 +202,6 @@ class Game:
             setattr(self, "delay", delays[1])
         elif mult_now >= 3.5:
             setattr(self, "delay", delays[2])
-
 
     def get_countdown_as_str(self):
         if self.state != "bet":
@@ -213,7 +215,7 @@ class Game:
             elif mm == 59:
                 return "00.0"
             elif ss == 0:
-                return "00." + str(cdown.microseconds/ 10000)
+                return "00." + str(cdown.microseconds / 10000)
             else:
                 s = "%02d:%02d.%2d" % (mm, ss, cdown.microseconds / 10000)
 
@@ -348,20 +350,20 @@ class Game:
                 adds.update({bet.address: 0})
             else:
                 adds.update({bet.address: bet.profit})
+
         send_rewards(self.elrond_account, adds)
 
     async def end_game(self, manual=False):  # todo add SC call with winning bets
         self.toggle_state()
-        await asyncio.sleep(5)
         pool_size = 0
-        for bet in self.bets.to_list:
-            pool_size += bet.amount
-
         player_profits = 0
 
         for bet in self.bets.to_list:
+            pool_size += bet.amount
             if bet.haswon:
-                player_profits += bet.amount
+                player_profits += bet.profit
+
+        player_profits = 0
 
         self.force_cashout()
 
