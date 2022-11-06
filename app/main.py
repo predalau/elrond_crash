@@ -78,7 +78,7 @@ async def ws(websocket: WebSocket):
                 await websocket.send_json(payload)
                 continue
 
-            await asyncio.sleep(0.2)
+            await asyncio.sleep(0.015)
             payload = {
                 "gameState": game.state,
                 "multiplier": game.multiplier_now,
@@ -92,8 +92,8 @@ async def ws(websocket: WebSocket):
         # websockets.ConnectionClosed,
         # websockets.ConnectionClosedOK,
         # websockets.ConnectionClosedError,
-        #
         print(str(e))
+        await websocket.close()
 
 
 @app.get(
