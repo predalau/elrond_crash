@@ -342,6 +342,9 @@ class Game:
 
         final.reverse()
         return final
+    def change_state(self, st):
+        if st in ["bet", "end", "play"]:
+            setattr(self, "state", st)
 
     def force_cashout(self):
         adds = {}
@@ -355,7 +358,7 @@ class Game:
         send_rewards(self.elrond_account, adds)
 
     async def end_game(self, manual=False):  # todo add SC call with winning bets
-        self.toggle_state()
+        self.change_state("end")
         pool_size = 0
         player_profits = 0
 

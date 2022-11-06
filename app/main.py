@@ -42,7 +42,7 @@ async def run_game():
 
         if game.state == "bet":
             if datetime.now() > game.start_time:
-                game.toggle_state()
+                game.change_state("play")
             else:
                 new_bets = get_all_bets()
                 game.bets.update(new_bets)
