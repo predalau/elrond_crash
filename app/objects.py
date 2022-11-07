@@ -126,19 +126,12 @@ class Game:
         self.set_next_hash_and_mult()
         self.state = "bet"
         self.delay = 0.1
+        self.payout = False
         self.house_balance = self.get_house_balance()
         self.bets = Bets()
-        self.start_time = datetime.now() + timedelta(seconds=BETTING_STAGE_DURATION)
+        self.start_time = datetime.now() + timedelta(seconds=5)  # BETTING_STAGE_DURATION)
         self.set_mult_array()
         self._connect_elrond_wallet()
-
-    @property
-    def _state(self):
-        return self.state
-
-    @_state.setter
-    def _state(self, a):
-        self.state = a
 
     def _connect_elrond_wallet(self):
         from elrond import get_proxy_and_account
@@ -166,9 +159,6 @@ class Game:
         assert hasattr(self, "mult_array")
 
         i = self.runtime_index
-        if i == -1:
-            print("i is -1")
-            return
 
         mult_now = self.multiplier_now
         player_potential_wins = 0
@@ -212,25 +202,25 @@ class Game:
             mm, ss = divmod(cdown.seconds, 60)
             hh, mm = divmod(mm, 60)
             if mm == 0:
-                s = "%02d.%2d" % (ss, cdown.microseconds / 10000)
+                s = "%02d.%01d" % (ss, cdown.microseconds / 10000)
             elif mm == 59:
                 return "00.0"
             elif ss == 0:
-                return "00." + str(cdown.microseconds / 10000)
+                return "00." + str(cdown.microseconds / 100000)
             else:
-                s = "%02d:%02d.%2d" % (mm, ss, cdown.microseconds / 10000)
+                s = "%02d:%02d.%01d" % (mm, ss, cdown.microseconds / 10000)
 
             return s
 
     def toggle_state(self):
-        curr_state = self._state
+        curr_state = self.state
 
         if curr_state == "bet":
-            self.state = "play"
+            setattr(self, "state", "play")
         elif curr_state == "play":
-            self.state = "end"
+            setattr(self, "state", "end")
         elif curr_state == "end":
-            self.state = "bet"
+            setattr(self, "state", "bet")
 
         print("Game state: \t", self.state)
 
@@ -240,21 +230,6 @@ class Game:
         else:
             gameid = self.data.game_history["id"].values[-1] + 1
         return gameid
-
-    def start_new_game(self):
-        setattr(self, "identifier", self._get_id())
-        setattr(self, "data", GameHistory())
-        self.set_next_hash_and_mult()
-        self._state = "bet"
-        setattr(self, "house_balance", self.get_house_balance())
-        setattr(self, "bets", [])
-        setattr(self, "start_time", datetime.now() + timedelta(seconds=25))
-
-    def change_state(self):
-        if self.state == "bet":
-            setattr(self, "state", "play")
-        elif self.state == "play":
-            setattr(self, "state", "bet")
 
     def get_house_balance(self):  # todo Change to actual house wallet
         if self.data.game_history.empty:
@@ -342,23 +317,23 @@ class Game:
 
         final.reverse()
         return final
-    def change_state(self, st):
-        if st in ["bet", "end", "play"]:
-            setattr(self, "state", st)
 
     def force_cashout(self):
-        adds = {}
         for bet in self.bets.to_list:
             if bet.state == "open":
                 bet.cashout(-1)
+
+    def send_profits(self):
+        adds = {}
+        for bet in self.bets.to_list:
+            if bet.profit <= 0:
                 adds.update({bet.address: 0})
             else:
                 adds.update({bet.address: bet.profit})
+        return send_rewards(self.elrond_account, adds)
 
-        send_rewards(self.elrond_account, adds)
-
-    async def end_game(self, manual=False):  # todo add SC call with winning bets
-        self.change_state("end")
+    def end_game(self, manual=False):  # todo add SC call with winning bets
+        self.toggle_state()
         pool_size = 0
         player_profits = 0
 
@@ -381,9 +356,13 @@ class Game:
         if manual:
             print("MANUALLY crashed the game")
 
-        self.save_game_history()
-        self.save_bets_history()
-        self.__init__()
+
+
+    async def confirm_payouts(self):
+        while True:
+            await asyncio.sleep(1)
+            if self.payout:
+                return
 
     def save_game_history(self):
         print("Saving history: ")

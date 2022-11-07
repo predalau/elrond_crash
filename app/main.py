@@ -12,13 +12,9 @@ from elrond import get_all_bets
 from helpers import check_player_balance
 from objects import Game, Bet
 from schemas import BetSchema, CashoutBet
-from vars import DELAY, BETTING_DELAY
+from vars import BETTING_DELAY
 
 nest_asyncio.apply()
-
-# loop.create_task(game.countdown_bets_timer())
-
-# TODO make SCHEMAS for all payloads **in progress**
 
 app = FastAPI()
 
@@ -42,17 +38,24 @@ async def run_game():
 
         if game.state == "bet":
             if datetime.now() > game.start_time:
-                game.change_state("play")
+                game.toggle_state()
             else:
                 new_bets = get_all_bets()
                 game.bets.update(new_bets)
                 await asyncio.sleep(BETTING_DELAY)
 
         if game.state == "play":
+            if game.multiplier_now == -1:
+                game.end_game()
+                await asyncio.sleep(0.1)
+                status = game.send_profits()
+                print("Payout tx status:\t", status)
+                game.save_game_history()
+                game.save_bets_history()
+                game.__init__()
+
             game.iterate_game()
             await asyncio.sleep(game.delay)
-            if game.multiplier_now == -1:
-                await game.end_game()
 
 
 @app.on_event("startup")
@@ -62,23 +65,25 @@ async def start_game():
 
 
 @app.websocket("/ws")
-async def ws(websocket: WebSocket):
+async def ws(websoc: WebSocket):
     try:
         global game
-        await websocket.accept()
+        await websoc.accept()
         while True:
             if hasattr(game, "isPaused") and game.isPaused:
                 await asyncio.sleep(1)
                 payload = {
                     "gameState": "paused",
-                    "multiplier": -1,
+                    "multiplier": -2,
                     "activeBets": [],
+                    "lastBets": game.data.get_last_game_bets(),
+                    "betTimer": "",
                 }
                 payload = json.dumps(payload)
-                await websocket.send_json(payload)
+                await websoc.send_json(payload)
                 continue
 
-            await asyncio.sleep(0.015)
+            await asyncio.sleep(0.02)
             payload = {
                 "gameState": game.state,
                 "multiplier": game.multiplier_now,
@@ -86,14 +91,23 @@ async def ws(websocket: WebSocket):
                 "lastBets": game.data.get_last_game_bets(),
                 "betTimer": game.get_countdown_as_str(),
             }
-
-            await websocket.send_json(payload)
+            await websoc.send_json(payload)
     except Exception as e:
-        # websockets.ConnectionClosed,
-        # websockets.ConnectionClosedOK,
-        # websockets.ConnectionClosedError,
         print(str(e))
-        await websocket.close()
+
+
+@app.get(
+    "/sendRewards",
+    tags=["payout"],
+)
+async def send_payouts() -> dict[str]:
+    """
+    Send payouts to winning players
+    """
+    global game
+    status = game.send_profits()
+    setattr(game, "payout", True)
+    return {"status": status}
 
 
 @app.get(

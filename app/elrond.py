@@ -86,4 +86,4 @@ def send_rewards(sender: Account, adds: dict):
     tx.version = config.get_tx_version()
     tx.sign(sender)
     sent_tx = tx.send_wait_result(elrond_proxy, timeout=60)
-    print(sent_tx.__dict__)
+    return sent_tx.raw["status"]
