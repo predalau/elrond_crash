@@ -87,6 +87,7 @@ def send_rewards(sender: Account, adds: dict):
     tx.version = config.get_tx_version()
     tx.sign(sender)
     sent_tx = tx.send(elrond_proxy)
+    print(sent_tx)
     return sent_tx
 
 
@@ -99,4 +100,5 @@ async def confirm_transaction(txHash: str):
             response = response.json()
             status = response["status"]
             if status == "success":
+                print(response)
                 return
