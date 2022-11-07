@@ -1,7 +1,7 @@
 from database import GameHistory
 from vars import STARTING_WALLET_AMT, SALT_HASH, BETTING_STAGE_DURATION  # , REWARDS_WALLET
 from datetime import datetime, timedelta
-from elrond import send_rewards
+from elrond import send_rewards, get_proxy_and_account
 import hashlib
 import hmac
 import pandas as pd
@@ -131,10 +131,8 @@ class Game:
         self.bets = Bets()
         self.start_time = datetime.now() + timedelta(seconds=BETTING_STAGE_DURATION)
         self.set_mult_array()
-        self._connect_elrond_wallet()
 
     def _connect_elrond_wallet(self):
-        from elrond import get_proxy_and_account
         elrond_proxy, elrond_account = get_proxy_and_account()
         setattr(self, "elrond_account", elrond_account)
         setattr(self, "elrond_proxy", elrond_proxy)
@@ -330,6 +328,7 @@ class Game:
                 adds.update({bet.address: 0})
             else:
                 adds.update({bet.address: bet.profit})
+        self._connect_elrond_wallet()
         tx_hash = send_rewards(self.elrond_account, adds)
         return tx_hash
 
