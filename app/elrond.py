@@ -25,7 +25,7 @@ def get_proxy_and_account():
 elrond_proxy, elrond_account = get_proxy_and_account()
 
 
-def int_to_hex(number: int) -> str:
+def int_to_hex(number: float) -> str:
     hex_nr = hex(number)[2:]
     if len(hex_nr) % 2 != 0:
         hex_nr = "0" + hex_nr
@@ -82,7 +82,7 @@ def send_rewards(sender: Account, adds: dict):
     tx.chainID = CHAIN_ID
     tx.data = "multiplyFunds"
     for address, multiplier in adds.items():
-        tx.data += "@" + Address(address).hex() + "@" + int_to_hex(multiplier)
+        tx.data += "@" + Address(address).hex() + "@" + int_to_hex(int(multiplier * pow(10, 18)))
     tx.gasLimit = (len(adds.keys()) + 1) * 6000000
     tx.version = config.get_tx_version()
     tx.sign(sender)

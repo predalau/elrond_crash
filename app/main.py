@@ -170,6 +170,7 @@ async def place_bet(data: BetSchema):
 
 @app.post("/cashout", tags=["bets", "actions"])
 async def cashout(data: CashoutBet):
+    global game
     if game.state in ["bet", "end"]:
         raise HTTPException(
             status_code=403,

@@ -243,10 +243,11 @@ class Game:
 
     def cashout(self, wallet, lost=False):
         for bet in self.bets.to_list:
-            if not lost and bet.address == wallet:
-                bet.cashout(self.multiplier_now)
-            elif lost and bet.address == wallet:
-                bet.cashout(-1)
+            if bet.address == wallet:
+                if not lost:
+                    bet.cashout(self.multiplier_now)
+                else:
+                    bet.cashout(-1)
 
     def set_next_hash_and_mult(self):
         def get_result(game_hash):
@@ -327,7 +328,7 @@ class Game:
             if bet.profit <= 0:
                 adds.update({bet.address: 0})
             else:
-                adds.update({bet.address: bet.profit})
+                adds.update({bet.address: round(bet.profit, 3)})
         self._connect_elrond_wallet()
         tx_hash = send_rewards(self.elrond_account, adds)
         return tx_hash
