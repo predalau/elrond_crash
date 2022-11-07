@@ -4,6 +4,7 @@ from erdpy.proxy import ElrondProxy
 from erdpy.transactions import Transaction  # , BunchOfTransactions
 from erdpy import config
 from vars import CHAIN_ID, SC_ADDRESS
+import asyncio
 
 sc_gateway = ""
 if CHAIN_ID == "D":
@@ -11,7 +12,7 @@ if CHAIN_ID == "D":
 elif CHAIN_ID == "T":
     sc_gateway = f"https://testnet-gateway.elrond.com"  # /address/{SC_ADDRESS}/keys"
 else:
-    sc_gateway = f"https://gateway.elrond.com/"  # address/{SC_ADDRESS}/keys"
+    sc_gateway = f"https://gateway.elrond.com"  # address/{SC_ADDRESS}/keys"
 
 
 def get_proxy_and_account():
@@ -85,5 +86,18 @@ def send_rewards(sender: Account, adds: dict):
     tx.gasLimit = (len(adds.keys()) + 1) * 6000000
     tx.version = config.get_tx_version()
     tx.sign(sender)
-    sent_tx = tx.send_wait_result(elrond_proxy, timeout=60)
-    return sent_tx.raw["status"]
+    sent_tx = tx.send(elrond_proxy)
+    return sent_tx
+
+
+async def confirm_transaction(txHash: str):
+    endpoint = "https://devnet-api.elrond.com" + f"/transactions/{txHash}"
+    while True:
+        await asyncio.sleep(1)
+        response = requests.get(endpoint)
+        if response.status_code == 200:
+            response = response.json()
+            print(response)
+            status = response["status"]
+            if status == "success":
+                return

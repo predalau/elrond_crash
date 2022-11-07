@@ -8,7 +8,7 @@ import psycopg2
 from fastapi import FastAPI, WebSocket, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
-from elrond import get_all_bets
+from elrond import get_all_bets, confirm_transaction
 from helpers import check_player_balance
 from objects import Game, Bet
 from schemas import BetSchema, CashoutBet
@@ -48,8 +48,8 @@ async def run_game():
             if game.multiplier_now == -1:
                 game.end_game()
                 await asyncio.sleep(0.1)
-                status = game.send_profits()
-                print("Payout tx status:\t", status)
+                tx_hash = game.send_profits()
+                await confirm_transaction(tx_hash)
                 game.save_game_history()
                 game.save_bets_history()
                 game.__init__()
@@ -94,20 +94,6 @@ async def ws(websoc: WebSocket):
             await websoc.send_json(payload)
     except Exception as e:
         print(str(e))
-
-
-@app.get(
-    "/sendRewards",
-    tags=["payout"],
-)
-async def send_payouts() -> dict[str]:
-    """
-    Send payouts to winning players
-    """
-    global game
-    status = game.send_profits()
-    setattr(game, "payout", True)
-    return {"status": status}
 
 
 @app.get(

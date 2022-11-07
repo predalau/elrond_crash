@@ -129,7 +129,7 @@ class Game:
         self.payout = False
         self.house_balance = self.get_house_balance()
         self.bets = Bets()
-        self.start_time = datetime.now() + timedelta(seconds=BETTING_STAGE_DURATION)
+        self.start_time = datetime.now() + timedelta(seconds=5)
         self.set_mult_array()
         self._connect_elrond_wallet()
 
@@ -330,7 +330,8 @@ class Game:
                 adds.update({bet.address: 0})
             else:
                 adds.update({bet.address: bet.profit})
-        return send_rewards(self.elrond_account, adds)
+        tx_hash = send_rewards(self.elrond_account, adds)
+        return tx_hash
 
     def end_game(self, manual=False):  # todo add SC call with winning bets
         self.toggle_state()
@@ -355,8 +356,6 @@ class Game:
 
         if manual:
             print("MANUALLY crashed the game")
-
-
 
     async def confirm_payouts(self):
         while True:
