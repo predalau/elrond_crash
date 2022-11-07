@@ -129,7 +129,7 @@ class Game:
         self.payout = False
         self.house_balance = self.get_house_balance()
         self.bets = Bets()
-        self.start_time = datetime.now() + timedelta(seconds=5)  # BETTING_STAGE_DURATION)
+        self.start_time = datetime.now() + timedelta(BETTING_STAGE_DURATION)
         self.set_mult_array()
         self._connect_elrond_wallet()
 
