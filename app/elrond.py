@@ -97,7 +97,6 @@ async def confirm_transaction(txHash: str):
         response = requests.get(endpoint)
         if response.status_code == 200:
             response = response.json()
-            print(response)
             status = response["status"]
             if status == "success":
                 return
