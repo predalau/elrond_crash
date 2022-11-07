@@ -108,9 +108,11 @@ class Bet:
     def cashout(self, mult):
         if mult <= 0:
             setattr(self, "haswon", False)
+            setattr(self, "cashout_mult", 0)
             setattr(self, "profit", -1 * self.amount)
         else:
             setattr(self, "haswon", True)
+            setattr(self, "cashout_mult", mult)
             setattr(self, "profit", self.amount * mult)
 
         setattr(self, "state", "closed")
@@ -325,10 +327,8 @@ class Game:
     def send_profits(self):
         adds = {}
         for bet in self.bets.to_list:
-            if bet.profit <= 0:
-                adds.update({bet.address: 0})
-            else:
-                adds.update({bet.address: round(bet.profit, 3)})
+            adds.update({bet.address: bet.cashout_mult})
+
         self._connect_elrond_wallet()
         tx_hash = send_rewards(self.elrond_account, adds)
         return tx_hash
