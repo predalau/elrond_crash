@@ -243,13 +243,10 @@ class Game:
 
         return balance
 
-    def cashout(self, wallet, lost=False):
+    def cashout(self, wallet):
         for bet in self.bets.to_list:
             if bet.address == wallet:
-                if not lost:
-                    bet.cashout(self.multiplier_now)
-                else:
-                    bet.cashout(-1)
+                bet.cashout(self.multiplier_now)
 
     def set_next_hash_and_mult(self):
         def get_result(game_hash):
