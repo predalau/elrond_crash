@@ -34,19 +34,16 @@ def int_to_hex(number: int) -> str:
 
 
 def get_all_bets():
-    try:
-        sc = sc_gateway + "/address/" + SC_ADDRESS + "/keys"
-        bet_funds_hex = "bet_funds.mapped".encode().hex()
-        storage = requests.get(sc).json()["data"]["pairs"]
-        bet_funds = {
-            Address(key.replace(bet_funds_hex, "")).bech32(): int(value, 16) / pow(10, 18)
-            for key, value in storage.items()
-            if bet_funds_hex in key
-        }
-        return bet_funds
-    except erdpy.errors.BadAddressFormatError:
-        return []
-
+    sc = sc_gateway + "/address/" + SC_ADDRESS + "/keys"
+    bet_funds_hex = "bet_funds.mapped".encode().hex()
+    next_bet_funds_hex = "next_bet_funds.mapped".encode().hex()
+    storage = requests.get(sc).json()["data"]["pairs"]
+    bet_funds = {
+        Address(key.replace(bet_funds_hex, "")).bech32(): int(value, 16) / pow(10, 18)
+        for key, value in storage.items()
+        if bet_funds_hex in key and next_bet_funds_hex not in key
+    }
+    return bet_funds
 
 def get_all_rewards():
     sc = sc_gateway + "/address/" + SC_ADDRESS + "/keys"
