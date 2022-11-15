@@ -45,7 +45,7 @@ def get_all_bets():
         }
         return bet_funds
     except erdpy.errors.BadAddressFormatError:
-        return bet_funds
+        return []
 
 
 def get_all_rewards():
