@@ -152,13 +152,16 @@ class Game:
         setattr(self, "multiplier_now", mult_array[0])
 
     def iterate_game(self):
-        delays = [0.1, 0.04, 0.02]
+        delays = [0.1, 0.025, 0.01]
 
         assert hasattr(self, "runtime_index")
         assert hasattr(self, "multiplier_now")
         assert hasattr(self, "mult_array")
 
         i = self.runtime_index
+
+        if i < 0:
+            return
 
         mult_now = self.multiplier_now
         player_potential_wins = 0
@@ -172,7 +175,6 @@ class Game:
                 player_potential_wins += bet.amount * mult_now
 
         if i >= len(self.mult_array) - 1:
-            setattr(self, "multiplier_now", -1)
             setattr(self, "runtime_index", -1)
         else:
             setattr(
@@ -184,7 +186,6 @@ class Game:
 
         if player_potential_wins > 0.1 * (self.house_balance + total_bets):
             print("FORCED CRASH!")
-            setattr(self, "multiplier_now", -1)
             setattr(self, "runtime_index", -1)
 
         if 0 < mult_now < 2:

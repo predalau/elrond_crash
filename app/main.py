@@ -45,7 +45,7 @@ async def run_game():
                 await asyncio.sleep(BETTING_DELAY)
 
         if game.state == "play":
-            if game.multiplier_now == -1:
+            if game.runtime_index == -1:
                 game.end_game()
                 await asyncio.sleep(0.1)
                 tx_hash = game.send_profits()
