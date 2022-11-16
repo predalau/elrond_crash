@@ -1,5 +1,7 @@
+import json
+from app.helpers import get_http_request
 from database import GameHistory
-from vars import STARTING_WALLET_AMT, SALT_HASH, BETTING_STAGE_DURATION  # , REWARDS_WALLET
+from vars import STARTING_WALLET_AMT, SALT_HASH, BETTING_STAGE_DURATION, REWARDS_WALLET
 from datetime import datetime, timedelta
 from elrond import send_rewards, get_proxy_and_account
 import hashlib
@@ -122,16 +124,16 @@ class Game:
     """docstring for Game"""
 
     def __init__(self):
-        # todo self.house_address = REWARDS_WALLET
         self.data = GameHistory()
         self.identifier = self._get_id()
         self.set_next_hash_and_mult()
         self.state = "bet"
         self.delay = 0.1
         self.payout = False
-        self.house_balance = self.get_house_balance()
         self.bets = Bets()
         self.start_time = datetime.now() + timedelta(seconds=BETTING_STAGE_DURATION)
+        self.house_address = REWARDS_WALLET
+        self.house_balance = self.get_house_balance()
         self.set_mult_array()
 
     def _connect_elrond_wallet(self):
@@ -232,16 +234,16 @@ class Game:
             gameid = self.data.game_history["id"].values[-1] + 1
         return gameid
 
-    def get_house_balance(self):  # todo Change to actual house wallet
+    def get_house_balance(self):
         if self.data.game_history.empty:
             balance = STARTING_WALLET_AMT
         else:
-            balance = self.data.game_history["house_balance"].values[-1]
-            # req_url = f"https://api.elrond.com/accounts/{REWARDS_WALLET}"
-            # req = get_http_request(req_url)
-            # req = json.loads(req)
-            # balance = float(req["balance"]) / 10**18
+            req_url = f"https://devnet-gateway.elrond.com/address/{self.house_address}"
+            req = get_http_request(req_url)
+            req = json.loads(req.text)
+            balance = float(req["data"]["account"]["balance"]) / 10 ** 18
 
+        print("House balance is:\t", balance)
         return balance
 
     def cashout(self, wallet):
@@ -331,7 +333,7 @@ class Game:
         tx_hash = send_rewards(self.elrond_account, adds)
         return tx_hash
 
-    def end_game(self, manual=False):  # todo add SC call with winning bets
+    def end_game(self, manual=False):
         self.toggle_state()
         pool_size = 0
         player_profits = 0
