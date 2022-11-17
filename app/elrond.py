@@ -95,7 +95,7 @@ def send_rewards(sender: Account, adds: dict):
 async def confirm_transaction(txHash: str):
     endpoint = "https://devnet-api.elrond.com" + f"/transactions/{txHash}"
     while True:
-        await asyncio.sleep(1)
+        await asyncio.sleep(2)
         response = requests.get(endpoint)
         if response.status_code == 200:
             response = response.json()
@@ -103,3 +103,5 @@ async def confirm_transaction(txHash: str):
             if status == "success":
                 print(response)
                 return
+        else:
+            print("Bad request:\t", endpoint)

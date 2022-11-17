@@ -130,6 +130,7 @@ class Game:
         self.state = "bet"
         self.delay = 0.1
         self.payout = False
+        self.afterCrash = "crash"
         self.bets = Bets()
         self.start_time = datetime.now() + timedelta(seconds=BETTING_STAGE_DURATION)
         self.house_address = REWARDS_WALLET
@@ -202,7 +203,8 @@ class Game:
             return "00.0"
         else:
             cdown = self.start_time - datetime.now()
-            mm, ss = divmod(cdown.seconds, 60)
+            total_secs = cdown.total_seconds()
+            mm, ss = divmod(total_secs, 60)
             hh, mm = divmod(mm, 60)
             if mm == 0:
                 s = "%02d.%01d" % (ss, cdown.microseconds / 10000)
@@ -333,8 +335,20 @@ class Game:
         tx_hash = send_rewards(self.elrond_account, adds)
         return tx_hash
 
+    async def confirm_5_seconds(self):
+
+        assert hasattr(self, "not_crash_timestamp")
+
+        while True:
+            await asyncio.sleep(1)
+            if datetime.now() > self.not_crash_timestamp:
+                setattr(self, "afterCrash", "notCrash")
+                return True
+
     def end_game(self, manual=False):
         self.toggle_state()
+        setattr(self, "afterCrash", "crash")
+        setattr(self, "not_crash_timestamp", datetime.now() + timedelta(seconds=5))
         pool_size = 0
         player_profits = 0
 

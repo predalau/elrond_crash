@@ -37,6 +37,9 @@ async def run_game():
             continue
 
         if game.state == "bet":
+            if game.afterCrash == "notCrash":
+                setattr(game, "afterCrash", "crash")
+
             if datetime.now() > game.start_time:
                 game.toggle_state()
             else:
@@ -49,6 +52,7 @@ async def run_game():
                 game.end_game()
                 await asyncio.sleep(0.1)
                 tx_hash = game.send_profits()
+                await game.confirm_5_seconds()
                 await confirm_transaction(tx_hash)
                 game.save_game_history()
                 game.save_bets_history()
@@ -86,10 +90,11 @@ async def ws(websoc: WebSocket):
             await asyncio.sleep(0.02)
             payload = {
                 "gameState": game.state,
-                "multiplier": game.multiplier_now,
+                "multiplier": "{:.2f}".format(game.multiplier_now),
                 "activeBets": game.get_current_bets(),
                 "lastBets": game.data.get_last_game_bets(),
                 "betTimer": game.get_countdown_as_str(),
+                "afterCrash": game.afterCrash,
             }
             await websoc.send_json(payload)
     except Exception as e:
