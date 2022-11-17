@@ -190,6 +190,30 @@ class GameHistory:
 
         return df
 
+    def get_weekly_leaderboard(self):
+        sql_query = "select * from bets where timestamp >= current_date - 7 and timestamp <= current_date"
+        df = pd.read_sql_query(
+            sql_query,
+            self.db.conn,
+        )
+        unique_bettors = df["address"].unique()
+        final = []
+
+        for addr in unique_bettors:
+            volume = df[df["address"] == addr]["amount"].sum()
+            profit = df[df["address"] == addr]["profit"].sum()
+            final.append(
+                {"address": addr, "volume": float("{:.2f}".format(volume)), "profit": float("{:.2f}".format(profit))})
+
+        final = pd.DataFrame(final)
+        final = final.sort_values(by=["volume"], ascending=[False])
+        final_list = []
+
+        for i, elem in final.iterrows():
+            final_list.append(elem.to_json())
+
+        return final_list
+
     def get_last_multipliers(self):
         if hasattr(self, "game_history") and not self.game_history.empty:
             if len(self.game_history["multiplier"].values) < 30:

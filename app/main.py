@@ -160,17 +160,10 @@ async def get_game_state():
     return {"state": state}
 
 
-@app.post("/placeBet", tags=["bets"])
-async def place_bet(data: BetSchema):
-    if game.state in ["play", "end"]:
-        raise HTTPException(
-            status_code=403,
-            detail="Can only place bet during BETTING stage",
-        )
-
-    bet = Bet(data.walletAddress, data.betAmount)
-    game.add_bet(bet)
-    return {"status": "success"}
+@app.get("/weeklyLeaderboard", tags=["getters"])
+async def weekly_leaderboard():
+    wlb = game.data.get_weekly_leaderboard()
+    return wlb
 
 
 @app.post("/cashout", tags=["bets", "actions"])
