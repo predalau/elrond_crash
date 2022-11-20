@@ -139,7 +139,6 @@ class Game:
 
     def _connect_elrond_wallet(self):
         elrond_proxy, elrond_account = get_proxy_and_account()
-        elrond_account.sync_nonce(elrond_proxy)
         setattr(self, "elrond_account", elrond_account)
         setattr(self, "elrond_proxy", elrond_proxy)
 
@@ -333,6 +332,7 @@ class Game:
             adds.update({bet.address: bet.cashout_mult})
 
         self._connect_elrond_wallet()
+        self.elrond_account.sync_nonce(self.elrond_proxy)
         tx_hash = send_rewards(self.elrond_account, adds)
         return tx_hash
 
