@@ -139,6 +139,7 @@ class Game:
 
     def _connect_elrond_wallet(self):
         elrond_proxy, elrond_account = get_proxy_and_account()
+        elrond_account.sync_nonce(elrond_proxy)
         setattr(self, "elrond_account", elrond_account)
         setattr(self, "elrond_proxy", elrond_proxy)
 
