@@ -88,10 +88,73 @@ async def ws(websoc: WebSocket):
                 continue
 
             await asyncio.sleep(0.02)
+            bets = [
+                {
+                    "walletAddress": "erd1rh5ddjpw7688vez7kcy20apmen326hkf97j4enmmvwx9m20xx9qqjq4qy2",
+                    "betAmount": 0.3,
+                    "profit": 0.35,
+                    "state": "open",
+                },
+                {
+                    "walletAddress": "erd1rh5ddjpw7688vez7kcy20apmen326hkf97j4enmmvwx9m20xx9qqjq4qy2",
+                    "betAmount": 0.3,
+                    "profit": 0.35,
+                    "state": "open",
+                },
+                {
+                    "walletAddress": "erd1rh5ddjpw7688vez7kcy20apmen326hkf97j4enmmvwx9m20xx9qqjq4qy2",
+                    "betAmount": 0.3,
+                    "profit": 0.35,
+                    "state": "open",
+                },
+                {
+                    "walletAddress": "erd1rh5ddjpw7688vez7kcy20apmen326hkf97j4enmmvwx9m20xx9qqjq4qy2",
+                    "betAmount": 0.3,
+                    "profit": 0.35,
+                    "state": "open",
+                },
+                {
+                    "walletAddress": "erd1rh5ddjpw7688vez7kcy20apmen326hkf97j4enmmvwx9m20xx9qqjq4qy2",
+                    "betAmount": 0.3,
+                    "profit": 0.35,
+                    "state": "open",
+                },
+                {
+                    "walletAddress": "erd1rh5ddjpw7688vez7kcy20apmen326hkf97j4enmmvwx9m20xx9qqjq4qy2",
+                    "betAmount": 0.3,
+                    "profit": 0.35,
+                    "state": "closed",
+                },
+                {
+                    "walletAddress": "erd1rh5ddjpw7688vez7kcy20apmen326hkf97j4enmmvwx9m20xx9qqjq4qy2",
+                    "betAmount": 0.3,
+                    "profit": 0.35,
+                    "state": "closed",
+                },
+                {
+                    "walletAddress": "erd1rh5ddjpw7688vez7kcy20apmen326hkf97j4enmmvwx9m20xx9qqjq4qy2",
+                    "betAmount": 0.3,
+                    "profit": 0.35,
+                    "state": "open",
+                },
+                {
+                    "walletAddress": "erd1rh5ddjpw7688vez7kcy20apmen326hkf97j4enmmvwx9m20xx9qqjq4qy2",
+                    "betAmount": 0.3,
+                    "profit": 0.35,
+                    "state": "closed",
+                },
+                {
+                    "walletAddress": "erd1rh5ddjpw7688vez7kcy20apmen326hkf97j4enmmvwx9m20xx9qqjq4qy2",
+                    "betAmount": 0.3,
+                    "profit": 0.35,
+                    "state": "open",
+                },
+
+            ]
             payload = {
                 "gameState": game.state,
                 "multiplier": "{:.2f}".format(game.multiplier_now),
-                "activeBets": game.get_current_bets(),
+                "activeBets": bets,#game.get_current_bets(),
                 "lastBets": game.data.get_last_game_bets(),
                 "betTimer": game.get_countdown_as_str(),
                 "afterCrash": game.afterCrash,

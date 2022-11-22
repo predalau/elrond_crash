@@ -136,7 +136,7 @@ class Game:
         self.payout = False
         self.afterCrash = "crash"
         self.bets = Bets()
-        self.start_time = datetime.now() + timedelta(seconds=BETTING_STAGE_DURATION)
+        self.start_time = datetime.now() + timedelta(minutes=BETTING_STAGE_DURATION)
         self.house_address = REWARDS_WALLET
         self.house_balance = self.get_house_balance()
         self.set_mult_array()
