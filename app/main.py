@@ -133,13 +133,24 @@ async def get_last_bets() -> List[Dict]:
 
 @app.get(
     "/getLastTenMultipliers",
-    tags=["history"],
+    tags=["getters", "history"],
     response_model=List,
 )
 async def get_last_ten_multipliers():
     global game
     multipliers = game.data.get_last_multipliers()
     return multipliers
+
+
+@app.get(
+    "/getUserLastTenBets",
+    tags=["getters", "history"],
+    response_model=List,
+)
+async def get_last_ten_bets(walletAddress: str):
+    global game
+    bets = game.data.get_user_last_bets(walletAddress)
+    return bets
 
 
 @app.get("/checkPlayerBalance/{walletAddress}/{balance}/{signer}")
@@ -188,7 +199,7 @@ async def end_game():
             )
 
         else:
-            setattr(game, "multiplier_now", -1)
+            setattr(game, "runtime_index", -1)
             await asyncio.sleep(2)
             if game.state != "play":
                 return {"status": "success"}
@@ -199,7 +210,7 @@ async def end_game():
         print("Connection ERROR! attempting to reconnect")
         print(e)
         game.data.db.__init__()
-        setattr(game, "multiplier_now", -1)
+        setattr(game, "runtime_index", -1)
         await asyncio.sleep(2)
         if game.state != "play":
             return {"status": "success"}
