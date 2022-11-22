@@ -214,6 +214,24 @@ class GameHistory:
 
         return final_list
 
+    def get_user_last_bets(self, addr: str):
+        sql_query = f"select * from bets where address='{addr}'"
+        df = pd.read_sql_query(
+            sql_query,
+            self.db.conn,
+        )
+        final = []
+        df = df.iloc[-10:]
+        if df.empty:
+            return final
+        cols = ["timestamp", "address", "amount", "profit"]
+        for i, row in df.iterrows():
+            final.append(row[cols].to_dict())
+
+        final.reverse()
+
+        return final
+
     def get_last_multipliers(self):
         if hasattr(self, "game_history") and not self.game_history.empty:
             if len(self.game_history["multiplier"].values) < 30:

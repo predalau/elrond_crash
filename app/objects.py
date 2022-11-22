@@ -127,6 +127,10 @@ class Game:
         self.data = GameHistory()
         self.identifier = self._get_id()
         self.set_next_hash_and_mult()
+
+        while self.multiplier > 500:
+            self.set_next_hash_and_mult(self.hash)
+
         self.state = "bet"
         self.delay = 0.1
         self.payout = False
@@ -253,7 +257,7 @@ class Game:
             if bet.address == wallet:
                 bet.cashout(self.multiplier_now)
 
-    def set_next_hash_and_mult(self):
+    def set_next_hash_and_mult(self, given_hash=''):
         def get_result(game_hash):
             hm = hmac.new(str.encode(game_hash), b"", hashlib.sha256)
             hm.update(game_hash.encode("utf-8"))
@@ -267,7 +271,9 @@ class Game:
             result = (((100 * e - h) / (e - h)) // 1) / 100.0
             return gme_hex, result
 
-        if self.data.game_history.empty:
+        if given_hash:
+            gme_hash, multiplier = get_result(given_hash)
+        elif self.data.game_history.empty:
             gme_hash, multiplier = get_result(SALT_HASH)
         else:
             last_hash = self.data.game_history["hash"].values[-1]
