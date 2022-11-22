@@ -45,6 +45,7 @@ def get_all_bets():
     }
     return bet_funds
 
+
 def get_all_rewards():
     sc = sc_gateway + "/address/" + SC_ADDRESS + "/keys"
     reward_funds_hex = "reward_funds.mapped".encode().hex()
@@ -79,7 +80,7 @@ def send_rewards(sender: Account, adds: dict):
     tx.sender = sender.address.bech32()
     tx.value = str(int(0.00 * pow(10, 18)))
     tx.receiver = SC_ADDRESS
-    tx.gasPrice = 1000000000
+    tx.gasPrice = min(6000000000, 6000000000 * (len(adds) + 1))
     tx.chainID = CHAIN_ID
     tx.data = "multiplyFunds"
     for address, multiplier in adds.items():

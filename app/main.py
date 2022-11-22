@@ -48,6 +48,9 @@ async def run_game():
                 await asyncio.sleep(BETTING_DELAY)
 
         if game.state == "play":
+            game.iterate_game()
+            await asyncio.sleep(game.delay)
+
             if game.runtime_index == -1:
                 game.end_game()
                 await asyncio.sleep(0.1)
@@ -57,9 +60,6 @@ async def run_game():
                 game.save_game_history()
                 game.save_bets_history()
                 game.__init__()
-
-            game.iterate_game()
-            await asyncio.sleep(game.delay)
 
 
 @app.on_event("startup")
