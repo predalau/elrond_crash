@@ -11,7 +11,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from elrond import get_all_bets, confirm_transaction
 from helpers import check_player_balance
 from objects import Game, Bet
-from schemas import BetSchema
+from schemas import BetSchema, Address
 from vars import BETTING_DELAY
 
 nest_asyncio.apply()
@@ -179,7 +179,7 @@ async def weekly_leaderboard():
 
 
 @app.post("/cashout", tags=["bets", "actions"])
-async def cashout(data):
+async def cashout(data: Address):
     global game
     print(data)
     if game.state in ["bet", "end"]:

@@ -9,6 +9,10 @@ class Bet(BaseModel):
     betAmount: float = Field(None, title="Bet Amount in EGLD")
 
 
+class Address(BaseModel):
+    walletAddress: str = Field(None, title=erd_address_format)
+
+
 class User(BaseModel):
     walletAddress: str = Field(None, title=erd_address_format, min_length=62, max_length=62)
     balance: Optional[float] = Field(None, title="The amount of EGLD available")
