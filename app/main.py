@@ -11,7 +11,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from elrond import get_all_bets, confirm_transaction
 from helpers import check_player_balance
 from objects import Game, Bet
-from schemas import BetSchema, Address
+from schemas import BetSchema
 from vars import BETTING_DELAY
 
 nest_asyncio.apply()
@@ -148,7 +148,7 @@ async def get_last_ten_multipliers():
     tags=["bets", "getters", "history"],
     response_model=List,
 )
-async def get_last_ten_bets(data: Address):
+async def get_last_ten_bets(data):
     global game
     bets = game.data.get_user_last_bets(data.walletAddress)
     return bets
@@ -179,7 +179,7 @@ async def weekly_leaderboard():
 
 
 @app.post("/cashout", tags=["bets", "actions"])
-async def cashout(data: Address):
+async def cashout(data):
     global game
     if game.state in ["bet", "end"]:
         raise HTTPException(
