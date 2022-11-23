@@ -207,7 +207,12 @@ class Game:
             return "00.0"
         else:
             cdown = self.start_time - datetime.now()
-            total_secs = cdown.total_seconds()
+
+            if hasattr(cdown, "days") and cdown.days == -1:
+                self.toggle_state()
+                return "00.0"
+
+            total_secs = cdown.seconds
             mm, ss = divmod(total_secs, 60)
             hh, mm = divmod(mm, 60)
             if mm == 0:
