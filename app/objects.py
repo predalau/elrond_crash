@@ -217,11 +217,9 @@ class Game:
             mm, ss = divmod(total_secs, 60)
             hh, mm = divmod(mm, 60)
             if mm == 0:
-                s = "%02d.%01d" % (ss, cdown.microseconds / 10000)
-            elif mm == 59:
-                return "00.0"
+                s = str(cdown.seconds) + "." +  str(cdown.microseconds)[0]
             elif ss == 0:
-                return "00." + str(cdown.microseconds / 100000)
+                return "0." + str(cdown.microseconds)[0]
             else:
                 s = "%02d:%02d.%01d" % (mm, ss, cdown.microseconds / 10000)
 
