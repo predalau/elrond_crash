@@ -209,6 +209,7 @@ class Game:
             cdown = self.start_time - datetime.now()
 
             if hasattr(cdown, "days") and cdown.days == -1:
+                print("LOG:\tChange state from within countdown")
                 self.toggle_state()
                 return "00.0"
 
