@@ -181,6 +181,7 @@ async def weekly_leaderboard():
 @app.post("/cashout", tags=["bets", "actions"])
 async def cashout(data):
     global game
+    print(data)
     if game.state in ["bet", "end"]:
         raise HTTPException(
             status_code=403,
