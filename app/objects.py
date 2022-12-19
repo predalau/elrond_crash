@@ -318,7 +318,6 @@ class Game:
         if hasattr(cdown, "days") and cdown.days == -1 and not self.start_game:
             print("LOG:\tChange state from within countdown 2.0")
             setattr(self, "start_game", True)
-            return "0.0"
 
         final = []
         for bet in self.bets.to_list:
