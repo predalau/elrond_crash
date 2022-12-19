@@ -258,7 +258,7 @@ class Game:
 
     def cashout(self, wallet):
         for bet in self.bets.to_list:
-            if bet.address == wallet:
+            if bet.address == wallet and bet.state == "open":
                 bet.cashout(self.multiplier_now)
 
     def set_next_hash_and_mult(self, given_hash=''):
