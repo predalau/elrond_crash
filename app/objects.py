@@ -160,7 +160,7 @@ class Game:
         setattr(self, "multiplier_now", mult_array[0])
 
     def iterate_game(self):
-        delays = [0.1, 0.025, 0.01]
+        delays = [0.07, 0.025, 0.01]
 
         assert hasattr(self, "runtime_index")
         assert hasattr(self, "multiplier_now")

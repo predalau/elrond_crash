@@ -88,7 +88,12 @@ async def ws(websoc: WebSocket):
                 await websoc.send_json(payload)
                 continue
 
-            await asyncio.sleep(0.02)
+            if game.state == "bet":
+                await asyncio.sleep(0.1)
+            elif game.state == "play":
+                await asyncio.sleep(0.02)
+            else:
+                await asyncio.sleep(0.5)
 
             payload = {
                 "gameState": game.state,
