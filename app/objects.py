@@ -137,6 +137,7 @@ class Game:
         self.afterCrash = "crash"
         self.bets = Bets()
         self.start_time = datetime.now() + timedelta(seconds=BETTING_STAGE_DURATION)
+        self.start_game = False
         self.house_address = REWARDS_WALLET
         self.house_balance = self.get_house_balance()
         self.set_mult_array()
@@ -204,24 +205,23 @@ class Game:
 
     def get_countdown_as_str(self):
         if self.state != "bet":
-            return "00.0"
+            return "00.00"
         else:
             cdown = self.start_time - datetime.now()
 
-            if hasattr(cdown, "days") and cdown.days == -1:
+            if hasattr(cdown, "days") and cdown.days == -1 and not self.start_game:
                 print("LOG:\tChange state from within countdown")
-                self.toggle_state()
-                return "00.0"
+                setattr(self, "start_game", True)
+                return "00.00"
 
-            total_secs = cdown.seconds
-            mm, ss = divmod(total_secs, 60)
-            hh, mm = divmod(mm, 60)
-            if mm == 0:
-                s = str(cdown.seconds) + "." +  str(cdown.microseconds / 10000)[0]
-            elif ss == 0:
-                return "0." + str(cdown.microseconds / 10000)[0]
-            else:
-                s = "%02d:%02d.%01d" % (mm, ss, cdown.microseconds / 10000)
+
+            s = str(cdown)
+            s = s.split(".")
+            s = s[0] + "." + s[1][:2]
+            s = s.replace("0:00:", "")
+
+            if s.startswith("-1 day"):
+                s = "00.00"
 
             return s
 
@@ -312,6 +312,13 @@ class Game:
     def get_current_bets(self):
         if len(self.bets.to_list) == 0:
             return []
+
+        cdown = self.start_time - datetime.now()
+
+        if hasattr(cdown, "days") and cdown.days == -1 and not self.start_game:
+            print("LOG:\tChange state from within countdown 2.0")
+            setattr(self, "start_game", True)
+            return "0.0"
 
         final = []
         for bet in self.bets.to_list:

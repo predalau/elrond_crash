@@ -13,6 +13,7 @@ from helpers import check_player_balance
 from objects import Game, Bet
 from schemas import BetSchema, Address
 from vars import BETTING_DELAY
+from time import sleep
 
 nest_asyncio.apply()
 
@@ -40,7 +41,7 @@ async def run_game():
             if game.afterCrash == "notCrash":
                 setattr(game, "afterCrash", "crash")
 
-            if datetime.now() > game.start_time:
+            if datetime.now() > game.start_time or game.start_game:
                 game.toggle_state()
             else:
                 new_bets = get_all_bets()
