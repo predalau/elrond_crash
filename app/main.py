@@ -88,7 +88,7 @@ async def ws(websoc: WebSocket):
                 continue
 
             if game.state == "bet":
-                await asyncio.sleep(0.1)
+                await asyncio.sleep(0.05)
             elif game.state == "play":
                 await asyncio.sleep(0.02)
             else:
