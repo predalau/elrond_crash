@@ -10,10 +10,9 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from elrond import get_all_bets, confirm_transaction
 from helpers import check_player_balance
-from objects import Game, Bet
+from objects import Game
 from schemas import BetSchema, Address
 from vars import BETTING_DELAY
-from time import sleep
 
 nest_asyncio.apply()
 
