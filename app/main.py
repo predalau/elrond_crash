@@ -30,36 +30,35 @@ app.add_middleware(
 
 
 async def run_game():
-    global game
-    while True:
-        if hasattr(game, "isPaused") and game.isPaused:
-            await asyncio.sleep(1)
-            continue
+    try:
+        global game
+        while True:
+            if hasattr(game, "isPaused") and game.isPaused:
+                await asyncio.sleep(1)
+                continue
 
-        if game.state == "bet":
-            if game.afterCrash == "notCrash":
-                setattr(game, "afterCrash", "crash")
+            if game.state == "bet":
+                if game.afterCrash == "notCrash":
+                    setattr(game, "afterCrash", "crash")
 
-            if datetime.now() > game.start_time or game.start_game:
-                game.toggle_state()
-            else:
-                new_bets = get_all_bets()
-                game.bets.update(new_bets)
-                await asyncio.sleep(BETTING_DELAY)
+                if datetime.now() > game.start_time or game.start_game:
+                    game.toggle_state()
+                else:
+                    new_bets = get_all_bets()
+                    if new_bets and not game.has_players:
+                        setattr(game, "has_players", True)
 
-        if game.state == "play":
-            game.iterate_game()
-            await asyncio.sleep(game.delay)
+                    game.bets.update(new_bets)
+                    await asyncio.sleep(BETTING_DELAY)
 
-            if game.runtime_index == -1:
-                game.end_game()
-                await asyncio.sleep(0.1)
-                tx_hash = game.send_profits()
-                await game.confirm_5_seconds()
-                await confirm_transaction(tx_hash)
-                game.save_game_history()
-                game.save_bets_history()
-                game.__init__()
+            if game.state == "play":
+                game.iterate_game()
+                await asyncio.sleep(game.delay)
+
+                if game.runtime_index == -1:
+                    await game.end_game()
+    except Exception as e:
+        print(e)
 
 
 @app.on_event("startup")
