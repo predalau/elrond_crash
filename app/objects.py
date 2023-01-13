@@ -205,23 +205,23 @@ class Game:
 
     def get_countdown_as_str(self):
         if self.state != "bet":
-            return "00.00"
+            return "00:00"
         else:
             cdown = self.start_time - datetime.now()
 
             if hasattr(cdown, "days") and cdown.days == -1 and not self.start_game:
                 print("LOG:\tChange state from within countdown")
                 setattr(self, "start_game", True)
-                return "00.00"
-
+                return "00:00"
 
             s = str(cdown)
             s = s.split(".")
             s = s[0] + "." + s[1][:2]
             s = s.replace("0:00:", "")
+            s = s.replace(".", ":")
 
             if s.startswith("-1 day"):
-                s = "00.00"
+                s = "00:00"
 
             return s
 
