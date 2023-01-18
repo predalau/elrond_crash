@@ -1,9 +1,10 @@
 import json
+import random
 from app.helpers import get_http_request
 from database import GameHistory
 from vars import STARTING_WALLET_AMT, SALT_HASH, BETTING_STAGE_DURATION, REWARDS_WALLET
 from datetime import datetime, timedelta
-from elrond import send_rewards, get_proxy_and_account
+from elrond import send_rewards, get_proxy_and_account, confirm_transaction
 import hashlib
 import hmac
 import pandas as pd
@@ -132,6 +133,7 @@ class Game:
             self.set_next_hash_and_mult(self.hash)
 
         self.state = "bet"
+        self.has_players = False
         self.delay = 0.1
         self.payout = False
         self.afterCrash = "crash"
@@ -171,6 +173,17 @@ class Game:
         if i < 0:
             return
 
+        bets_closed = all([bet.state == "closed" for bet in self.bets.to_list])        setattr(self, "bets_closed", bets_closed)
+
+
+        if self.multiplier > 50:
+            if (self.has_players and bets_closed) or not self.has_players:
+                old_mult = self.multiplier
+                setattr(self, "multiplier", round(random.uniform(55, 100), 2))
+                self.set_mult_array()
+                setattr(self, "has_players", True)
+                print(f"LOG:\t Multiplier changed from {old_mult} to {self.multiplier}")
+
         mult_now = self.multiplier_now
         player_potential_wins = 0
         total_bets = 0
@@ -192,8 +205,9 @@ class Game:
             )
             setattr(self, "runtime_index", i + 1)
 
-        if player_potential_wins > 0.1 * (self.house_balance + total_bets):
+        if player_potential_wins > 0.25 * (self.house_balance + total_bets):
             print("FORCED CRASH!")
+            setattr(self, "multiplier", self.multiplier_now)
             setattr(self, "runtime_index", -1)
 
         if 0 < mult_now < 2:
@@ -289,7 +303,7 @@ class Game:
 
     async def countdown_bets_timer(self):
         while True:
-            if datetime.now() > self.start_time:
+            if datetime.now() > self.start_time and self.state == "bet":
                 self.toggle_state()
                 return
             await asyncio.sleep(1)
@@ -366,7 +380,7 @@ class Game:
                 setattr(self, "afterCrash", "notCrash")
                 return True
 
-    def end_game(self, manual=False):
+    async def end_game(self, manual=False):
         self.toggle_state()
         setattr(self, "afterCrash", "crash")
         setattr(self, "not_crash_timestamp", datetime.now() + timedelta(seconds=5))
@@ -391,6 +405,14 @@ class Game:
 
         if manual:
             print("MANUALLY crashed the game")
+
+        await asyncio.sleep(0.1)
+        tx_hash = self.send_profits()
+        await self.confirm_5_seconds()
+        await confirm_transaction(tx_hash)
+        self.save_game_history()
+        self.save_bets_history()
+        self.__init__()
 
     async def confirm_payouts(self):
         while True:
