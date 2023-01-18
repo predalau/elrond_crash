@@ -20,6 +20,7 @@ DATABASE_MAP = {
         "identifier": [],
         "timestamp": [],
         "hash": [],
+        "tx_hash": [],
         "pool_size": [],
         "multiplier": [],
         "house_profit": [],

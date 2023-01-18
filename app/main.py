@@ -146,6 +146,16 @@ async def get_last_ten_multipliers():
     multipliers = game.data.get_last_multipliers()
     return multipliers
 
+@app.get(
+    "/getLatestGames",
+    tags=["getters", "history"],
+    response_model=List[Dict],
+)
+async def get_latest_games():
+    global game
+    latest_games = game.data.get_latest_games()
+    return latest_games
+
 
 @app.post(
     "/getUserLastTenBets",

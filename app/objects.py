@@ -222,8 +222,8 @@ class Game:
             return "00:00"
         else:
             cdown = self.start_time - datetime.now()
-
             if hasattr(cdown, "days") and cdown.days == -1 and not self.start_game:
+                # TODO bugfix if not end state
                 print("LOG:\tChange state from within countdown")
                 setattr(self, "start_game", True)
                 return "00:00"
@@ -364,6 +364,10 @@ class Game:
         self._connect_elrond_wallet()
         self.elrond_account.sync_nonce(self.elrond_proxy)
         tx_hash = send_rewards(self.elrond_account, adds)
+        if tx_hash:
+            setattr(self, "tx_hash", tx_hash)
+        else:
+            setattr(self, "tx_hash", "")
         return tx_hash
 
     async def confirm_5_seconds(self):
@@ -418,7 +422,7 @@ class Game:
 
     def save_game_history(self):
         print("Saving history: ")
-        self.data.db.add_row("games", self.to_tuple())
+        self.data.db.add_row("games_2023", self.to_tuple())
 
     def save_bets_history(self):
         print("Saving bets: ")

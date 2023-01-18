@@ -182,7 +182,7 @@ class GameHistory:
         self.last_ten_multipliers = self.get_last_multipliers()
 
     def _import_game_history(self):
-        df = self.db.get_table("games")
+        df = self.db.get_table("games_2023")
         return df
 
     def _import_bet_history(self):
@@ -240,6 +240,16 @@ class GameHistory:
                 multipliers = self.game_history["multiplier"].tolist()[-30:]
             return multipliers
 
+        else:
+            return []
+
+    def get_latest_games(self):
+        if hasattr(self, "game_history") and not self.game_history.empty:
+            if len(self.game_history["multiplier"].values) < 30:
+                games = self.game_history[["timestamp", "tx_hash", "multiplier", "pool_size"]].to_dict("records")
+            else:
+                games = self.game_history.iloc[-30:][["timestamp", "tx_hash", "multiplier", "pool_size"]].to_dict("records")
+            return games
         else:
             return []
 
