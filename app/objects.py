@@ -173,12 +173,16 @@ class Game:
         if i < 0:
             return
 
-        if not self.has_players and self.multiplier > 50:
-            old_mult = self.multiplier
-            setattr(self, "multiplier", round(random.uniform(55, 100), 2))
-            self.set_mult_array()
-            setattr(self, "has_players", True)
-            print(f"LOG:\t Multiplier changed from {old_mult} to {self.multiplier}")
+        bets_closed = all([bet.state == "closed" for bet in self.bets.to_list])        setattr(self, "bets_closed", bets_closed)
+
+
+        if self.multiplier > 50:
+            if (self.has_players and bets_closed) or not self.has_players:
+                old_mult = self.multiplier
+                setattr(self, "multiplier", round(random.uniform(55, 100), 2))
+                self.set_mult_array()
+                setattr(self, "has_players", True)
+                print(f"LOG:\t Multiplier changed from {old_mult} to {self.multiplier}")
 
         mult_now = self.multiplier_now
         player_potential_wins = 0
