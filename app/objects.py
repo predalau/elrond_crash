@@ -222,8 +222,7 @@ class Game:
             return "00:00"
         else:
             cdown = self.start_time - datetime.now()
-            if hasattr(cdown, "days") and cdown.days == -1 and not self.start_game:
-                # TODO bugfix if not end state
+            if hasattr(cdown, "days") and cdown.days == -1 and not self.start_game and self.state == "bet":
                 print("LOG:\tChange state from within countdown")
                 setattr(self, "start_game", True)
                 return "00:00"
@@ -331,7 +330,7 @@ class Game:
 
         cdown = self.start_time - datetime.now()
 
-        if hasattr(cdown, "days") and cdown.days == -1 and not self.start_game:
+        if hasattr(cdown, "days") and cdown.days == -1 and not self.start_game and self.state == "bet":
             print("LOG:\tChange state from within countdown 2.0")
             setattr(self, "start_game", True)
 
