@@ -157,6 +157,17 @@ async def get_latest_games():
     return latest_games
 
 
+@app.get(
+    "/getPlayerWeeklyStats",
+    tags=["getters", "history"],
+    response_model=Dict,
+)
+async def get_latest_games():
+    global game
+    latest_games = game.data.get_player_weekly_stats()
+    return latest_games
+
+
 @app.post(
     "/getUserLastTenBets",
     tags=["bets", "getters", "history"],

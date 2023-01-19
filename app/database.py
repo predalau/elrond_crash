@@ -214,6 +214,15 @@ class GameHistory:
 
         return final_list
 
+    def get_player_weekly_stats(self, addr: str) -> dict:
+        sql_query = f"select * from bets where address='{addr}' and timestamp >= date_trunc('week', current_date) - interval '1 week'"
+        df = pd.read_sql_query(
+            sql_query,
+            self.db.conn,
+        )
+        final = {"volume": df["amount"].sum(), "profit": df["profit"].sum(), "games_played": df.shape[0]}
+        return final
+
     def get_user_last_bets(self, addr: str):
         sql_query = f"select * from bets where address='{addr}'"
         df = pd.read_sql_query(
