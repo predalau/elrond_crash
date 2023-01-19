@@ -246,9 +246,14 @@ class GameHistory:
     def get_latest_games(self):
         if hasattr(self, "game_history") and not self.game_history.empty:
             if len(self.game_history["multiplier"].values) < 30:
-                games = self.game_history[["timestamp", "tx_hash", "multiplier", "pool_size"]].to_dict("records")
+                games = self.game_history[["timestamp", "tx_hash", "multiplier", "pool_size", "house_profit"]]
             else:
-                games = self.game_history.iloc[-30:][["timestamp", "tx_hash", "multiplier", "pool_size"]].to_dict("records")
+                games = self.game_history.iloc[-30:][
+                    ["timestamp", "tx_hash", "multiplier", "pool_size", "house_profit"]]
+
+            games["house_profit"] = games["house_profit"].apply(lambda x: x * -1)
+            games.rename(columns={"house_profit": "players_total_profits"}, inplace=True)
+            games = games.to_dict("records")
             return games
         else:
             return []
