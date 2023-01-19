@@ -185,38 +185,38 @@ class Game:
                 setattr(self, "forced_change", True)
                 print(f"LOG:\t Multiplier changed from {old_mult} to {self.multiplier}")
 
-    mult_now = self.multiplier_now
-    player_potential_wins = 0
-    total_bets = 0
+        mult_now = self.multiplier_now
+        player_potential_wins = 0
+        total_bets = 0
 
-    for bet in self.bets.to_list:
-        total_bets += bet.amount
-        if bet.haswon:
-            player_potential_wins += bet.profit
+        for bet in self.bets.to_list:
+            total_bets += bet.amount
+            if bet.haswon:
+                player_potential_wins += bet.profit
+            else:
+                player_potential_wins += bet.amount * mult_now
+
+        if i >= len(self.mult_array) - 1:
+            setattr(self, "runtime_index", -1)
         else:
-            player_potential_wins += bet.amount * mult_now
+            setattr(
+                self,
+                "multiplier_now",
+                float(format(self.mult_array[i + 1], ".2f")),
+            )
+            setattr(self, "runtime_index", i + 1)
 
-    if i >= len(self.mult_array) - 1:
-        setattr(self, "runtime_index", -1)
-    else:
-        setattr(
-            self,
-            "multiplier_now",
-            float(format(self.mult_array[i + 1], ".2f")),
-        )
-        setattr(self, "runtime_index", i + 1)
+        if player_potential_wins > 0.25 * (self.house_balance + total_bets):
+            print("FORCED CRASH!")
+            setattr(self, "multiplier", self.multiplier_now)
+            setattr(self, "runtime_index", -1)
 
-    if player_potential_wins > 0.25 * (self.house_balance + total_bets):
-        print("FORCED CRASH!")
-        setattr(self, "multiplier", self.multiplier_now)
-        setattr(self, "runtime_index", -1)
-
-    if 0 < mult_now < 2:
-        setattr(self, "delay", delays[0])
-    elif 2 <= mult_now < 3.5:
-        setattr(self, "delay", delays[1])
-    elif mult_now >= 3.5:
-        setattr(self, "delay", delays[2])
+        if 0 < mult_now < 2:
+            setattr(self, "delay", delays[0])
+        elif 2 <= mult_now < 3.5:
+            setattr(self, "delay", delays[1])
+        elif mult_now >= 3.5:
+            setattr(self, "delay", delays[2])
 
 
 def get_countdown_as_str(self):
