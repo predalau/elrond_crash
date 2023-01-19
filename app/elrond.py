@@ -102,7 +102,6 @@ async def confirm_transaction(txHash: str):
             response = response.json()
             status = response["status"]
             if status == "success":
-                print(response)
                 return
         else:
             print("Bad request:\t", endpoint)

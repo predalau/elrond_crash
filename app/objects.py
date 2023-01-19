@@ -246,10 +246,9 @@ class Game:
             setattr(self, "state", "play")
         elif curr_state == "play":
             setattr(self, "state", "end")
-        elif curr_state == "end":
-            setattr(self, "state", "bet")
 
         print("Game state: \t", self.state)
+        print(self.bets.to_list)
 
     def _get_id(self):
         if self.data.game_history.empty:
@@ -266,8 +265,11 @@ class Game:
             req = get_http_request(req_url)
             req = json.loads(req.text)
             balance = float(req["data"]["account"]["balance"]) / 10 ** 18
-
+        print(100 * "-")
+        print("New game initiated!")
         print("House balance is:\t", balance)
+        print("Game state:\t", self.state)
+
         return balance
 
     def cashout(self, wallet):
@@ -425,9 +427,9 @@ class Game:
         self.data.db.add_row("games_2023", self.to_tuple())
 
     def save_bets_history(self):
-        print("Saving bets: ")
         bets = self.bets.to_list_of_tuples(self.hash)
-        print(bets)
+        print("LOG:\tSaving bets:\t", bets)
+
         for elem in bets:
             self.data.db.add_row("bets", elem)
 
