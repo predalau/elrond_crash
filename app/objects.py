@@ -176,313 +176,336 @@ class Game:
         bets_closed = all([bet.state == "closed" for bet in self.bets.to_list])
         setattr(self, "bets_closed", bets_closed)
 
-        if self.multiplier > 50:
-            if (self.has_players and bets_closed) or not self.has_players:
+        if self.multiplier > 50 and not self.forced_change:
+            if (self.has_players and bets_closed) or (not self.has_players):
                 old_mult = self.multiplier
                 setattr(self, "multiplier", round(random.uniform(55, 100), 2))
                 self.set_mult_array()
                 setattr(self, "has_players", True)
+                setattr(self, "forced_change", True)
                 print(f"LOG:\t Multiplier changed from {old_mult} to {self.multiplier}")
 
-        mult_now = self.multiplier_now
-        player_potential_wins = 0
-        total_bets = 0
+    mult_now = self.multiplier_now
+    player_potential_wins = 0
+    total_bets = 0
 
-        for bet in self.bets.to_list:
-            total_bets += bet.amount
-            if bet.haswon:
-                player_potential_wins += bet.profit
-            else:
-                player_potential_wins += bet.amount * mult_now
-
-        if i >= len(self.mult_array) - 1:
-            setattr(self, "runtime_index", -1)
+    for bet in self.bets.to_list:
+        total_bets += bet.amount
+        if bet.haswon:
+            player_potential_wins += bet.profit
         else:
-            setattr(
-                self,
-                "multiplier_now",
-                float(format(self.mult_array[i + 1], ".2f")),
-            )
-            setattr(self, "runtime_index", i + 1)
+            player_potential_wins += bet.amount * mult_now
 
-        if player_potential_wins > 0.25 * (self.house_balance + total_bets):
-            print("FORCED CRASH!")
-            setattr(self, "multiplier", self.multiplier_now)
-            setattr(self, "runtime_index", -1)
-
-        if 0 < mult_now < 2:
-            setattr(self, "delay", delays[0])
-        elif 2 <= mult_now < 3.5:
-            setattr(self, "delay", delays[1])
-        elif mult_now >= 3.5:
-            setattr(self, "delay", delays[2])
-
-    def get_countdown_as_str(self):
-        if self.state != "bet":
-            return "00:00"
-        else:
-            cdown = self.start_time - datetime.now()
-            if hasattr(cdown, "days") and cdown.days == -1 and not self.start_game and self.state == "bet":
-                print("LOG:\tChange state from within countdown")
-                setattr(self, "start_game", True)
-                return "00:00"
-
-            s = str(cdown)
-            s = s.split(".")
-            s = s[0] + "." + s[1][:2]
-            s = s.replace("0:00:", "")
-            s = s.replace(".", ":")
-
-            if s.startswith("-1 day"):
-                s = "00:00"
-
-            return s
-
-    def toggle_state(self):
-        curr_state = self.state
-
-        if curr_state == "bet":
-            setattr(self, "state", "play")
-        elif curr_state == "play":
-            setattr(self, "state", "end")
-
-        print("Game state: \t", self.state)
-        bets = [bet.to_dict() for bet in self.bets.to_list]
-        print(bets)
-
-    def _get_id(self):
-        if self.data.game_history.empty:
-            return 0
-        else:
-            gameid = self.data.game_history["id"].values[-1] + 1
-        return gameid
-
-    def get_house_balance(self):
-        if self.data.game_history.empty:
-            balance = STARTING_WALLET_AMT
-        else:
-            req_url = f"https://devnet-gateway.elrond.com/address/{self.house_address}"
-            req = get_http_request(req_url)
-            req = json.loads(req.text)
-            balance = float(req["data"]["account"]["balance"]) / 10 ** 18
-        print(100 * "-")
-        print("New game initiated!")
-        print("House balance is:\t", balance)
-        print("Game state:\t", self.state)
-
-        return balance
-
-    def cashout(self, wallet):
-        for bet in self.bets.to_list:
-            if bet.address == wallet and bet.state == "open":
-                bet.cashout(self.multiplier_now)
-
-    def set_next_hash_and_mult(self, given_hash=''):
-        def get_result(game_hash):
-            hm = hmac.new(str.encode(game_hash), b"", hashlib.sha256)
-            hm.update(game_hash.encode("utf-8"))
-            gme_hex = hm.hexdigest()
-
-            if int(gme_hex, 16) % 33 == 0:
-                return gme_hex, 1
-
-            h = int(gme_hex[:13], 16)
-            e = 2 ** 52
-            result = (((100 * e - h) / (e - h)) // 1) / 100.0
-            return gme_hex, result
-
-        if given_hash:
-            gme_hash, multiplier = get_result(given_hash)
-        elif self.data.game_history.empty:
-            gme_hash, multiplier = get_result(SALT_HASH)
-        else:
-            last_hash = self.data.game_history["hash"].values[-1]
-            gme_hash, multiplier = get_result(last_hash)
-
-        setattr(self, "hash", gme_hash)
-        setattr(self, "multiplier", multiplier)
-        return gme_hash, multiplier
-
-    async def countdown_bets_timer(self):
-        while True:
-            if datetime.now() > self.start_time and self.state == "bet":
-                self.toggle_state()
-                return
-            await asyncio.sleep(1)
-
-    async def countdown_bets(self):
-        return await self.countdown_bets_timer()
-
-    async def has_state_changed(self, state):
-        while True:
-            if self._state != state:
-                return self._state
-
-            await asyncio.sleep(0.5)
-
-    async def get_gamestate_change(self):
-        state = self._state
-        new_state = await self.has_state_changed(state)
-        return new_state
-
-    def get_current_bets(self):
-        if len(self.bets.to_list) == 0:
-            return []
-
-        cdown = self.start_time - datetime.now()
-
-        if hasattr(cdown, "days") and cdown.days == -1 and not self.start_game and self.state == "bet":
-            print("LOG:\tChange state from within countdown 2.0")
-            setattr(self, "start_game", True)
-
-        final = []
-        for bet in self.bets.to_list:
-            if bet.state == "open":
-                profit = float(np.sum(bet.amount) * self.multiplier_now)
-            else:
-                profit = bet.profit
-
-            bet = {
-                "walletAddress": bet.address,
-                "betAmount": bet.amount,
-                "profit": float(format(profit, ".2f")),
-                "state": bet.state,
-            }
-            final.append(bet)
-
-        final.reverse()
-        return final
-
-    def force_cashout(self):
-        for bet in self.bets.to_list:
-            if bet.state == "open":
-                bet.cashout(-1)
-
-    def send_profits(self):
-        adds = {}
-        for bet in self.bets.to_list:
-            adds.update({bet.address: bet.cashout_mult})
-
-        self._connect_elrond_wallet()
-        self.elrond_account.sync_nonce(self.elrond_proxy)
-        tx_hash = send_rewards(self.elrond_account, adds)
-        if tx_hash:
-            setattr(self, "tx_hash", tx_hash)
-        else:
-            setattr(self, "tx_hash", "")
-        return tx_hash
-
-    async def confirm_5_seconds(self):
-
-        assert hasattr(self, "not_crash_timestamp")
-
-        while True:
-            await asyncio.sleep(1)
-            if datetime.now() > self.not_crash_timestamp:
-                setattr(self, "afterCrash", "notCrash")
-                return True
-
-    async def end_game(self, manual=False):
-        self.toggle_state()
-        setattr(self, "afterCrash", "crash")
-        setattr(self, "not_crash_timestamp", datetime.now() + timedelta(seconds=5))
-        pool_size = 0
-        player_profits = 0
-
-        for bet in self.bets.to_list:
-            pool_size += bet.amount
-            if bet.haswon:
-                player_profits += bet.profit
-
-        player_profits = 0
-
-        self.force_cashout()
-
-        house_profits = pool_size - player_profits
-
-        setattr(self, "timestamp", datetime.now())
-        setattr(self, "house_profit", house_profits)
-        setattr(self, "pool_size", pool_size)
-        setattr(self, "house_balance", self.house_balance + house_profits)
-
-        if manual:
-            print("MANUALLY crashed the game")
-
-        await asyncio.sleep(0.1)
-        tx_hash = self.send_profits()
-        await self.confirm_5_seconds()
-        await confirm_transaction(tx_hash)
-        self.save_game_history()
-        self.save_bets_history()
-        self.__init__()
-
-    async def confirm_payouts(self):
-        while True:
-            await asyncio.sleep(1)
-            if self.payout:
-                return
-
-    def save_game_history(self):
-        print("Saving history: ")
-        self.data.db.add_row("games_2023", self.to_tuple())
-
-    def save_bets_history(self):
-        bets = self.bets.to_list_of_tuples(self.hash)
-        print("LOG:\tSaving bets:\t", bets)
-
-        for elem in bets:
-            self.data.db.add_row("bets", elem)
-
-    def to_dict(self):
-        cols = self.data.map["games"].keys()
-        dic = {}
-        for col in cols:
-            if hasattr(self, col):
-                dic.update({col: getattr(self, col)})
-        return dic
-
-    def to_tuple(
+    if i >= len(self.mult_array) - 1:
+        setattr(self, "runtime_index", -1)
+    else:
+        setattr(
             self,
-    ):
-        cols = self.data.map["games"].keys()
+            "multiplier_now",
+            float(format(self.mult_array[i + 1], ".2f")),
+        )
+        setattr(self, "runtime_index", i + 1)
+
+    if player_potential_wins > 0.25 * (self.house_balance + total_bets):
+        print("FORCED CRASH!")
+        setattr(self, "multiplier", self.multiplier_now)
+        setattr(self, "runtime_index", -1)
+
+    if 0 < mult_now < 2:
+        setattr(self, "delay", delays[0])
+    elif 2 <= mult_now < 3.5:
+        setattr(self, "delay", delays[1])
+    elif mult_now >= 3.5:
+        setattr(self, "delay", delays[2])
+
+
+def get_countdown_as_str(self):
+    if self.state != "bet":
+        return "00:00"
+    else:
+        cdown = self.start_time - datetime.now()
+        if hasattr(cdown, "days") and cdown.days == -1 and not self.start_game and self.state == "bet":
+            print("LOG:\tChange state from within countdown")
+            setattr(self, "start_game", True)
+            return "00:00"
+
+        s = str(cdown)
+        s = s.split(".")
+        s = s[0] + "." + s[1][:2]
+        s = s.replace("0:00:", "")
+        s = s.replace(".", ":")
+
+        if s.startswith("-1 day"):
+            s = "00:00"
+
+        return s
+
+
+def toggle_state(self):
+    curr_state = self.state
+
+    if curr_state == "bet":
+        setattr(self, "state", "play")
+    elif curr_state == "play":
+        setattr(self, "state", "end")
+
+    print("Game state: \t", self.state)
+    bets = [bet.to_dict() for bet in self.bets.to_list]
+    print(bets)
+
+
+def _get_id(self):
+    if self.data.game_history.empty:
+        return 0
+    else:
+        gameid = self.data.game_history["id"].values[-1] + 1
+    return gameid
+
+
+def get_house_balance(self):
+    if self.data.game_history.empty:
+        balance = STARTING_WALLET_AMT
+    else:
+        req_url = f"https://devnet-gateway.elrond.com/address/{self.house_address}"
+        req = get_http_request(req_url)
+        req = json.loads(req.text)
+        balance = float(req["data"]["account"]["balance"]) / 10 ** 18
+    print(100 * "-")
+    print("New game initiated!")
+    print("House balance is:\t", balance)
+    print("Game state:\t", self.state)
+
+    return balance
+
+
+def cashout(self, wallet):
+    for bet in self.bets.to_list:
+        if bet.address == wallet and bet.state == "open":
+            bet.cashout(self.multiplier_now)
+
+
+def set_next_hash_and_mult(self, given_hash=''):
+    def get_result(game_hash):
+        hm = hmac.new(str.encode(game_hash), b"", hashlib.sha256)
+        hm.update(game_hash.encode("utf-8"))
+        gme_hex = hm.hexdigest()
+
+        if int(gme_hex, 16) % 33 == 0:
+            return gme_hex, 1
+
+        h = int(gme_hex[:13], 16)
+        e = 2 ** 52
+        result = (((100 * e - h) / (e - h)) // 1) / 100.0
+        return gme_hex, result
+
+    if given_hash:
+        gme_hash, multiplier = get_result(given_hash)
+    elif self.data.game_history.empty:
+        gme_hash, multiplier = get_result(SALT_HASH)
+    else:
+        last_hash = self.data.game_history["hash"].values[-1]
+        gme_hash, multiplier = get_result(last_hash)
+
+    setattr(self, "hash", gme_hash)
+    setattr(self, "multiplier", multiplier)
+    return gme_hash, multiplier
+
+
+async def countdown_bets_timer(self):
+    while True:
+        if datetime.now() > self.start_time and self.state == "bet":
+            self.toggle_state()
+            return
+        await asyncio.sleep(1)
+
+
+async def countdown_bets(self):
+    return await self.countdown_bets_timer()
+
+
+async def has_state_changed(self, state):
+    while True:
+        if self._state != state:
+            return self._state
+
+        await asyncio.sleep(0.5)
+
+
+async def get_gamestate_change(self):
+    state = self._state
+    new_state = await self.has_state_changed(state)
+    return new_state
+
+
+def get_current_bets(self):
+    if len(self.bets.to_list) == 0:
+        return []
+
+    cdown = self.start_time - datetime.now()
+
+    if hasattr(cdown, "days") and cdown.days == -1 and not self.start_game and self.state == "bet":
+        print("LOG:\tChange state from within countdown 2.0")
+        setattr(self, "start_game", True)
+
+    final = []
+    for bet in self.bets.to_list:
+        if bet.state == "open":
+            profit = float(np.sum(bet.amount) * self.multiplier_now)
+        else:
+            profit = bet.profit
+
+        bet = {
+            "walletAddress": bet.address,
+            "betAmount": bet.amount,
+            "profit": float(format(profit, ".2f")),
+            "state": bet.state,
+        }
+        final.append(bet)
+
+    final.reverse()
+    return final
+
+
+def force_cashout(self):
+    for bet in self.bets.to_list:
+        if bet.state == "open":
+            bet.cashout(-1)
+
+
+def send_profits(self):
+    adds = {}
+    for bet in self.bets.to_list:
+        adds.update({bet.address: bet.cashout_mult})
+
+    self._connect_elrond_wallet()
+    self.elrond_account.sync_nonce(self.elrond_proxy)
+    tx_hash = send_rewards(self.elrond_account, adds)
+    if tx_hash:
+        setattr(self, "tx_hash", tx_hash)
+    else:
+        setattr(self, "tx_hash", "")
+    return tx_hash
+
+
+async def confirm_5_seconds(self):
+    assert hasattr(self, "not_crash_timestamp")
+
+    while True:
+        await asyncio.sleep(1)
+        if datetime.now() > self.not_crash_timestamp:
+            setattr(self, "afterCrash", "notCrash")
+            return True
+
+
+async def end_game(self, manual=False):
+    self.toggle_state()
+    setattr(self, "afterCrash", "crash")
+    setattr(self, "not_crash_timestamp", datetime.now() + timedelta(seconds=5))
+    pool_size = 0
+    player_profits = 0
+
+    for bet in self.bets.to_list:
+        pool_size += bet.amount
+        if bet.haswon:
+            player_profits += bet.profit
+
+    player_profits = 0
+
+    self.force_cashout()
+
+    house_profits = pool_size - player_profits
+
+    setattr(self, "timestamp", datetime.now())
+    setattr(self, "house_profit", house_profits)
+    setattr(self, "pool_size", pool_size)
+    setattr(self, "house_balance", self.house_balance + house_profits)
+
+    if manual:
+        print("MANUALLY crashed the game")
+
+    await asyncio.sleep(0.1)
+    tx_hash = self.send_profits()
+    await self.confirm_5_seconds()
+    await confirm_transaction(tx_hash)
+    self.save_game_history()
+    self.save_bets_history()
+    self.__init__()
+
+
+async def confirm_payouts(self):
+    while True:
+        await asyncio.sleep(1)
+        if self.payout:
+            return
+
+
+def save_game_history(self):
+    print("Saving history: ")
+    self.data.db.add_row("games_2023", self.to_tuple())
+
+
+def save_bets_history(self):
+    bets = self.bets.to_list_of_tuples(self.hash)
+    print("LOG:\tSaving bets:\t", bets)
+
+    for elem in bets:
+        self.data.db.add_row("bets", elem)
+
+
+def to_dict(self):
+    cols = self.data.map["games"].keys()
+    dic = {}
+    for col in cols:
+        if hasattr(self, col):
+            dic.update({col: getattr(self, col)})
+    return dic
+
+
+def to_tuple(
+        self,
+):
+    cols = self.data.map["games"].keys()
+    dic = []
+    for col in cols:
+        if hasattr(self, col):
+            if col == "timestamp":
+                dic.append(getattr(self, col).isoformat())
+            else:
+                dic.append(getattr(self, col))
+    return tuple(dic)
+
+
+def bets_to_list_of_tuples(
+        self,
+):
+    cols = self.data.map["bets"].keys()
+    final = []
+    for elem in self.bets.to_list:
         dic = []
         for col in cols:
-            if hasattr(self, col):
-                if col == "timestamp":
-                    dic.append(getattr(self, col).isoformat())
-                else:
-                    dic.append(getattr(self, col))
-        return tuple(dic)
+            if col in elem.keys():
+                dic.append(elem[col])
 
-    def bets_to_list_of_tuples(
-            self,
-    ):
-        cols = self.data.map["bets"].keys()
-        final = []
-        for elem in self.bets.to_list:
-            dic = []
-            for col in cols:
-                if col in elem.keys():
-                    dic.append(elem[col])
+        final.append(tuple(dic))
+    return final
 
-            final.append(tuple(dic))
-        return final
 
-    def add_field(self, dic):
-        for key in dic.keys:
-            setattr(self, key, dic[key])
+def add_field(self, dic):
+    for key in dic.keys:
+        setattr(self, key, dic[key])
 
-    def add_bet(self, bet: Bet):
-        if self.state in ["play", "end"]:
-            return False
 
-        setattr(bet, "hash", self.hash)
-        self.bets.add_bet(bet)
+def add_bet(self, bet: Bet):
+    if self.state in ["play", "end"]:
+        return False
 
-        # new_bets = self.bets
-        # new_bet = bet.to_dict()
-        # new_bet.update({"hash": self.hash})
-        # new_bets.append(new_bet)
-        # print(new_bets)
-        # setattr(self, "bets", new_bets)
-        return True
+    setattr(bet, "hash", self.hash)
+    self.bets.add_bet(bet)
+
+    # new_bets = self.bets
+    # new_bet = bet.to_dict()
+    # new_bet.update({"hash": self.hash})
+    # new_bets.append(new_bet)
+    # print(new_bets)
+    # setattr(self, "bets", new_bets)
+    return True
