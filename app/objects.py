@@ -247,7 +247,8 @@ class Game:
             setattr(self, "state", "end")
 
         print("Game state: \t", self.state)
-        print(self.bets.to_list)
+        bets = [bet.to_dict() for bet in self.bets.to_list]
+        print(bets)
 
     def _get_id(self):
         if self.data.game_history.empty:
