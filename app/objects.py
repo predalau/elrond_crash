@@ -140,6 +140,7 @@ class Game:
         self.bets = Bets()
         self.start_time = datetime.now() + timedelta(seconds=BETTING_STAGE_DURATION)
         self.start_game = False
+        self.forced_change = False
         self.house_address = REWARDS_WALLET
         self.house_balance = self.get_house_balance()
         self.set_mult_array()
