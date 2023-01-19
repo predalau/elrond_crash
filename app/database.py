@@ -93,7 +93,7 @@ class ElrondCrashDatabase:
         Returns:
         None
         """
-        print(f"Adding row to '{table}': ", data)
+        print(f"Adding row to '{table}':\t", data)
         sql = f"""INSERT INTO {table} VALUES {str(data)};"""
         self.cur.execute(sql)
         self.conn.commit()
