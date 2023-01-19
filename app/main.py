@@ -162,9 +162,9 @@ async def get_latest_games():
     tags=["getters", "history"],
     response_model=Dict,
 )
-async def get_latest_games():
+async def get_player_stats(address: str):
     global game
-    latest_games = game.data.get_player_weekly_stats()
+    latest_games = game.data.get_player_weekly_stats(address)
     return latest_games
 
 
