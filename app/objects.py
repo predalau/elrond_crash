@@ -173,8 +173,8 @@ class Game:
         if i < 0:
             return
 
-        bets_closed = all([bet.state == "closed" for bet in self.bets.to_list])        setattr(self, "bets_closed", bets_closed)
-
+        bets_closed = all([bet.state == "closed" for bet in self.bets.to_list])
+        setattr(self, "bets_closed", bets_closed)
 
         if self.multiplier > 50:
             if (self.has_players and bets_closed) or not self.has_players:
