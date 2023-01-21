@@ -67,9 +67,9 @@ async def start_game():
     except Exception as e:
         print(e)
         traceback.print_exc()
-    finally:
         asyncio.create_task(run_game())
         print("LOG: Game has been restarted!")
+        # TODO Add notification to dev team
 
 @app.websocket("/ws")
 async def ws(websoc: WebSocket):
@@ -149,6 +149,7 @@ async def get_last_ten_multipliers():
     global game
     multipliers = game.data.get_last_multipliers()
     return multipliers
+
 
 @app.get(
     "/getLatestGames",
