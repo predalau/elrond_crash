@@ -1,6 +1,6 @@
 curl -1sLf \
   'https://repositories.timber.io/public/vector/cfg/setup/bash.deb.sh' \
-  | sudo -E bash
+  | sudo -n -E bash
 echo -e "Package: vector\nPin: version 0.26.0-1\nPin-Priority: 999" \
   > /etc/apt/preferences.d/vector && apt-get install vector=0.26.0-1
 wget -O ->> /etc/vector/vector.toml \
