@@ -9,7 +9,9 @@ from vars import (
 )
 import psycopg2
 import pandas as pd
+import warnings
 
+warnings.filterwarnings("ignore", category=UserWarning, module="pandas")
 
 class ElrondCrashDatabase:
     """docstring for ElrondDatabase"""
@@ -27,14 +29,17 @@ class ElrondCrashDatabase:
         Returns:
         psycopg2 connection obj
         """
-        conn = psycopg2.connect(
-            host=DB_HOST,
-            port=DB_PORT,
-            database=self.db_name,
-            user=DB_USER,
-            password=DB_PASS,
-        )
-        return conn
+        try:
+            conn = psycopg2.connect(
+                host=DB_HOST,
+                port=DB_PORT,
+                database=self.db_name,
+                user=DB_USER,
+                password=DB_PASS,
+            )
+            return conn
+        except UserWarning:
+            pass
 
     def create_table(self, table: str, cols: list, pkey=False):
         """
