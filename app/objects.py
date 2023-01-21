@@ -410,8 +410,6 @@ class Game:
             if bet.haswon:
                 player_profits += bet.profit
 
-        player_profits = 0
-
         self.force_cashout()
 
         house_profits = pool_size - player_profits
