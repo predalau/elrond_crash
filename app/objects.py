@@ -10,6 +10,9 @@ import hmac
 import pandas as pd
 import numpy as np
 import asyncio
+import logging
+
+logging.basicConfig(level=logging.DEBUG, format='%(asctime)s %(levelname)s %(message)s')
 
 
 class Bets:
@@ -184,7 +187,7 @@ class Game:
                 self.set_mult_array()
                 setattr(self, "has_players", True)
                 setattr(self, "forced_change", True)
-                print(f"LOG:\t Multiplier changed from {old_mult} to {self.multiplier}")
+                logging.info(f"Multiplier changed from {old_mult} to {self.multiplier} due to NO active bets")
 
         mult_now = self.multiplier_now
         player_potential_wins = 0
@@ -208,7 +211,8 @@ class Game:
             setattr(self, "runtime_index", i + 1)
 
         if player_potential_wins > 0.25 * (self.house_balance + total_bets):
-            print("FORCED CRASH!")
+            logging.debug(f"Forced CRASH at multiplier:\t{self.multiplier_now}")
+            logging.debug(f"Player profits lost:\t{player_potential_wins} EGLD")
             setattr(self, "multiplier", self.multiplier_now)
             setattr(self, "runtime_index", -1)
 
@@ -219,14 +223,13 @@ class Game:
         elif mult_now >= 3.5:
             setattr(self, "delay", delays[2])
 
-
     def get_countdown_as_str(self):
         if self.state != "bet":
             return "00:00"
         else:
             cdown = self.start_time - datetime.now()
             if hasattr(cdown, "days") and cdown.days == -1 and not self.start_game and self.state == "bet":
-                print("LOG:\tChange state from within countdown")
+                logging.debug("Change state from within countdown")
                 setattr(self, "start_game", True)
                 return "00:00"
 
@@ -241,7 +244,6 @@ class Game:
 
             return s
 
-
     def toggle_state(self):
         curr_state = self.state
 
@@ -250,10 +252,9 @@ class Game:
         elif curr_state == "play":
             setattr(self, "state", "end")
 
-        print("Game state: \t", self.state)
+        logging.info(f"Game state: \t{self.state}")
         bets = [bet.to_dict() for bet in self.bets.to_list]
-        print(bets)
-
+        logging.info(str(bets))
 
     def _get_id(self):
         if self.data.game_history.empty:
@@ -261,7 +262,6 @@ class Game:
         else:
             gameid = self.data.game_history["id"].values[-1] + 1
         return gameid
-
 
     def get_house_balance(self):
         if self.data.game_history.empty:
@@ -271,19 +271,16 @@ class Game:
             req = get_http_request(req_url)
             req = json.loads(req.text)
             balance = float(req["data"]["account"]["balance"]) / 10 ** 18
-        print(100 * "-")
-        print("New game initiated!")
-        print("House balance is:\t", balance)
-        print("Game state:\t", self.state)
+        logging.info("New game initiated!")
+        logging.info(f"House balance is:\t{balance}")
+        logging.info(f"Game state:\t{self.state}")
 
         return balance
-
 
     def cashout(self, wallet):
         for bet in self.bets.to_list:
             if bet.address == wallet and bet.state == "open":
                 bet.cashout(self.multiplier_now)
-
 
     def set_next_hash_and_mult(self, given_hash=''):
         def get_result(game_hash):
@@ -311,7 +308,6 @@ class Game:
         setattr(self, "multiplier", multiplier)
         return gme_hash, multiplier
 
-
     async def countdown_bets_timer(self):
         while True:
             if datetime.now() > self.start_time and self.state == "bet":
@@ -319,10 +315,8 @@ class Game:
                 return
             await asyncio.sleep(1)
 
-
     async def countdown_bets(self):
         return await self.countdown_bets_timer()
-
 
     async def has_state_changed(self, state):
         while True:
@@ -331,12 +325,10 @@ class Game:
 
             await asyncio.sleep(0.5)
 
-
     async def get_gamestate_change(self):
         state = self._state
         new_state = await self.has_state_changed(state)
         return new_state
-
 
     def get_current_bets(self):
         if len(self.bets.to_list) == 0:
@@ -345,7 +337,7 @@ class Game:
         cdown = self.start_time - datetime.now()
 
         if hasattr(cdown, "days") and cdown.days == -1 and not self.start_game and self.state == "bet":
-            print("LOG:\tChange state from within countdown 2.0")
+            logging.debug("Change state from within countdown 2.0")
             setattr(self, "start_game", True)
 
         final = []
@@ -366,12 +358,10 @@ class Game:
         final.reverse()
         return final
 
-
     def force_cashout(self):
         for bet in self.bets.to_list:
             if bet.state == "open":
                 bet.cashout(-1)
-
 
     def send_profits(self):
         adds = {}
@@ -387,7 +377,6 @@ class Game:
             setattr(self, "tx_hash", "")
         return tx_hash
 
-
     async def confirm_5_seconds(self):
         assert hasattr(self, "not_crash_timestamp")
 
@@ -396,7 +385,6 @@ class Game:
             if datetime.now() > self.not_crash_timestamp:
                 setattr(self, "afterCrash", "notCrash")
                 return True
-
 
     async def end_game(self, manual=False):
         self.toggle_state()
@@ -420,7 +408,7 @@ class Game:
         setattr(self, "house_balance", self.house_balance + house_profits)
 
         if manual:
-            print("MANUALLY crashed the game")
+            logging.warning("MANUALLY crashed the game")
 
         await asyncio.sleep(0.1)
         tx_hash = self.send_profits()
@@ -430,26 +418,22 @@ class Game:
         self.save_bets_history()
         self.__init__()
 
-
     async def confirm_payouts(self):
         while True:
             await asyncio.sleep(1)
             if self.payout:
                 return
 
-
     def save_game_history(self):
-        print("Saving history: ")
+        logging.info("Saving history: ")
         self.data.db.add_row("games_2023", self.to_tuple())
-
 
     def save_bets_history(self):
         bets = self.bets.to_list_of_tuples(self.hash)
-        print("LOG:\tSaving bets:\t", bets)
+        logging.info(f"Saving bets:\t{bets}")
 
         for elem in bets:
             self.data.db.add_row("bets", elem)
-
 
     def to_dict(self):
         cols = self.data.map["games"].keys()
@@ -458,7 +442,6 @@ class Game:
             if hasattr(self, col):
                 dic.update({col: getattr(self, col)})
         return dic
-
 
     def to_tuple(
             self,
@@ -472,7 +455,6 @@ class Game:
                 else:
                     dic.append(getattr(self, col))
         return tuple(dic)
-
 
     def bets_to_list_of_tuples(
             self,
@@ -488,11 +470,9 @@ class Game:
             final.append(tuple(dic))
         return final
 
-
     def add_field(self, dic):
         for key in dic.keys:
             setattr(self, key, dic[key])
-
 
     def add_bet(self, bet: Bet):
         if self.state in ["play", "end"]:

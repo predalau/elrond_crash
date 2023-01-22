@@ -1,5 +1,6 @@
 import asyncio
 import json
+import logging
 import traceback
 from datetime import datetime
 from typing import Dict, List
@@ -9,16 +10,16 @@ import psycopg2
 from fastapi import FastAPI, WebSocket, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
-from elrond import get_all_bets, confirm_transaction
+from elrond import get_all_bets
 from helpers import check_player_balance
 from objects import Game
 from schemas import BetSchema, Address
 from vars import BETTING_DELAY
 
+logging.basicConfig(level=logging.DEBUG, format='%(asctime)s %(levelname)s %(message)s')
 nest_asyncio.apply()
 
 app = FastAPI()
-
 game = Game()
 
 app.add_middleware(
@@ -63,13 +64,12 @@ async def run_game():
 async def start_game():
     try:
         asyncio.create_task(run_game())
-        print("LOG: Game is running!")
-    except Exception as e:
-        print(e)
-        traceback.print_exc()
+        logging.info("Game has been lauched successfully!")
+    except Exception:
+        logging.exception(traceback.format_exc())
         asyncio.create_task(run_game())
-        print("LOG: Game has been restarted!")
-        # TODO Add notification to dev team
+        logging.warning("Game has been restarted!")
+
 
 @app.websocket("/ws")
 async def ws(websoc: WebSocket):

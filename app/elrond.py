@@ -1,4 +1,3 @@
-import erdpy.errors
 import requests
 from erdpy.accounts import Account, Address
 from erdpy.proxy import ElrondProxy
@@ -6,6 +5,9 @@ from erdpy.transactions import Transaction  # , BunchOfTransactions
 from erdpy import config
 from vars import CHAIN_ID, SC_ADDRESS
 import asyncio
+import logging
+
+logging.basicConfig(level=logging.DEBUG, format='%(asctime)s %(levelname)s %(message)s')
 
 sc_gateway = ""
 if CHAIN_ID == "D":
@@ -89,7 +91,7 @@ def send_rewards(sender: Account, adds: dict):
     tx.version = config.get_tx_version()
     tx.sign(sender)
     sent_tx = tx.send(elrond_proxy)
-    print(sent_tx)
+    logging.info(f"Endgame rewards transaction:\t{sent_tx}")
     return sent_tx
 
 
@@ -104,4 +106,4 @@ async def confirm_transaction(txHash: str):
             if status == "success":
                 return
         else:
-            print("Bad request:\t", endpoint)
+            logging.debug(f"Bad request confirming endgame tx:\t{endpoint}")
