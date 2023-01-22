@@ -10,8 +10,11 @@ from vars import (
 import psycopg2
 import pandas as pd
 import warnings
+import logging
 
 warnings.filterwarnings("ignore", category=UserWarning, module="pandas")
+logging.basicConfig(level=logging.DEBUG, format='%(asctime)s %(levelname)s %(message)s')
+
 
 class ElrondCrashDatabase:
     """docstring for ElrondDatabase"""
@@ -98,10 +101,10 @@ class ElrondCrashDatabase:
         Returns:
         None
         """
-        print(f"Adding row to '{table}':\t", data)
         sql = f"""INSERT INTO {table} VALUES {str(data)};"""
         self.cur.execute(sql)
         self.conn.commit()
+        logging.info(f"Adding row to '{table}':\t{data}")
 
     def remove_by(self, table, condition):
         """
