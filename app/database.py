@@ -13,7 +13,7 @@ import warnings
 import logging
 
 warnings.filterwarnings("ignore", category=UserWarning, module="pandas")
-logging.basicConfig(level=logging.DEBUG, format='%(asctime)s %(levelname)s %(message)s')
+logger = logging.getLogger("fastapi")
 
 
 class ElrondCrashDatabase:
@@ -104,7 +104,7 @@ class ElrondCrashDatabase:
         sql = f"""INSERT INTO {table} VALUES {str(data)};"""
         self.cur.execute(sql)
         self.conn.commit()
-        logging.info(f"Adding row to '{table}':\t{data}")
+        logger.info(f"Adding row to '{table}':\t{data}")
 
     def remove_by(self, table, condition):
         """

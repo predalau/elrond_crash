@@ -12,8 +12,7 @@ import numpy as np
 import asyncio
 import logging
 
-logging.basicConfig(level=logging.DEBUG, format='%(asctime)s %(levelname)s %(message)s')
-
+logger = logging.getLogger("fastapi")
 
 class Bets:
     """docstring for Bet"""
@@ -187,7 +186,7 @@ class Game:
                 self.set_mult_array()
                 setattr(self, "has_players", True)
                 setattr(self, "forced_change", True)
-                logging.info(f"Multiplier changed from {old_mult} to {self.multiplier} due to NO active bets")
+                logger.info(f"Multiplier changed from {old_mult} to {self.multiplier} due to NO active bets")
 
         mult_now = self.multiplier_now
         player_potential_wins = 0
@@ -211,8 +210,8 @@ class Game:
             setattr(self, "runtime_index", i + 1)
 
         if player_potential_wins > 0.25 * (self.house_balance + total_bets):
-            logging.debug(f"Forced CRASH at multiplier:\t{self.multiplier_now}")
-            logging.debug(f"Player profits lost:\t{player_potential_wins} EGLD")
+            logger.debug(f"Forced CRASH at multiplier:\t{self.multiplier_now}")
+            logger.debug(f"Player profits lost:\t{player_potential_wins} EGLD")
             setattr(self, "multiplier", self.multiplier_now)
             setattr(self, "runtime_index", -1)
 
@@ -229,7 +228,7 @@ class Game:
         else:
             cdown = self.start_time - datetime.now()
             if hasattr(cdown, "days") and cdown.days == -1 and not self.start_game and self.state == "bet":
-                logging.debug("Change state from within countdown")
+                logger.debug("Change state from within countdown")
                 setattr(self, "start_game", True)
                 return "00:00"
 
@@ -252,9 +251,9 @@ class Game:
         elif curr_state == "play":
             setattr(self, "state", "end")
 
-        logging.info(f"Game state: \t{self.state}")
+        logger.info(f"Game state: \t{self.state}")
         bets = [bet.to_dict() for bet in self.bets.to_list]
-        logging.info(str(bets))
+        logger.info(str(bets))
 
     def _get_id(self):
         if self.data.game_history.empty:
@@ -271,9 +270,9 @@ class Game:
             req = get_http_request(req_url)
             req = json.loads(req.text)
             balance = float(req["data"]["account"]["balance"]) / 10 ** 18
-        logging.info("New game initiated!")
-        logging.info(f"House balance is:\t{balance}")
-        logging.info(f"Game state:\t{self.state}")
+        logger.info("New game initiated!")
+        logger.info(f"House balance is:\t{balance}")
+        logger.info(f"Game state:\t{self.state}")
 
         return balance
 
@@ -337,7 +336,7 @@ class Game:
         cdown = self.start_time - datetime.now()
 
         if hasattr(cdown, "days") and cdown.days == -1 and not self.start_game and self.state == "bet":
-            logging.debug("Change state from within countdown 2.0")
+            logger.debug("Change state from within countdown 2.0")
             setattr(self, "start_game", True)
 
         final = []
@@ -408,7 +407,7 @@ class Game:
         setattr(self, "house_balance", self.house_balance + house_profits)
 
         if manual:
-            logging.warning("MANUALLY crashed the game")
+            logger.warning("MANUALLY crashed the game")
 
         await asyncio.sleep(0.1)
         tx_hash = self.send_profits()
@@ -425,12 +424,12 @@ class Game:
                 return
 
     def save_game_history(self):
-        logging.info("Saving history: ")
+        logger.info("Saving history: ")
         self.data.db.add_row("games_2023", self.to_tuple())
 
     def save_bets_history(self):
         bets = self.bets.to_list_of_tuples(self.hash)
-        logging.info(f"Saving bets:\t{bets}")
+        logger.info(f"Saving bets:\t{bets}")
 
         for elem in bets:
             self.data.db.add_row("bets", elem)

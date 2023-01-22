@@ -7,7 +7,7 @@ from vars import CHAIN_ID, SC_ADDRESS
 import asyncio
 import logging
 
-logging.basicConfig(level=logging.DEBUG, format='%(asctime)s %(levelname)s %(message)s')
+logger = logging.getLogger("fastapi")
 
 sc_gateway = ""
 if CHAIN_ID == "D":
@@ -91,7 +91,7 @@ def send_rewards(sender: Account, adds: dict):
     tx.version = config.get_tx_version()
     tx.sign(sender)
     sent_tx = tx.send(elrond_proxy)
-    logging.info(f"Endgame rewards transaction:\t{sent_tx}")
+    logger.info(f"Endgame rewards transaction:\t{sent_tx}")
     return sent_tx
 
 
@@ -106,4 +106,4 @@ async def confirm_transaction(txHash: str):
             if status == "success":
                 return
         else:
-            logging.debug(f"Bad request confirming endgame tx:\t{endpoint}")
+            logger.debug(f"Bad request confirming endgame tx:\t{endpoint}")
