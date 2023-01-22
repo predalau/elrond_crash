@@ -32,42 +32,43 @@ app.add_middleware(
 
 async def run_game():
     global game
-    try:
-        while True:
-            if hasattr(game, "isPaused") and game.isPaused:
-                await asyncio.sleep(1)
-                continue
+    while True:
+        if hasattr(game, "isPaused") and game.isPaused:
+            await asyncio.sleep(1)
+            continue
 
-            if game.state == "bet":
-                if game.afterCrash == "notCrash":
-                    setattr(game, "afterCrash", "crash")
+        if game.state == "bet":
+            if game.afterCrash == "notCrash":
+                setattr(game, "afterCrash", "crash")
 
-                if datetime.now() > game.start_time or game.start_game:
-                    game.toggle_state()
-                else:
-                    new_bets = get_all_bets()
-                    if new_bets and not game.has_players:
-                        setattr(game, "has_players", True)
+            if datetime.now() > game.start_time or game.start_game:
+                game.toggle_state()
+            else:
+                new_bets = get_all_bets()
+                if new_bets and not game.has_players:
+                    setattr(game, "has_players", True)
 
-                    game.bets.update(new_bets)
-                    await asyncio.sleep(BETTING_DELAY)
+                game.bets.update(new_bets)
+                await asyncio.sleep(BETTING_DELAY)
 
-            if game.state == "play":
-                game.iterate_game()
-                await asyncio.sleep(game.delay)
+        if game.state == "play":
+            game.iterate_game()
+            await asyncio.sleep(game.delay)
 
-                if game.runtime_index == -1:
-                    await game.end_game()
-    except Exception as e:
-        print(e)
-        traceback.print_exc()
-        #asyncio.create_task(run_game())
-        print("ERROR: Game has crashed!")
+            if game.runtime_index == -1:
+                await game.end_game()
 
 @app.on_event("startup")
 async def start_game():
-    asyncio.create_task(run_game())
-    print("LOG: Game is running!")
+    try:
+        asyncio.create_task(run_game())
+        print("LOG: Game is running!")
+    except Exception as e:
+        print(e)
+        traceback.print_exc()
+        asyncio.create_task(run_game())
+        print("LOG: Game has been restarted!")
+        # TODO Add notification to dev team
 
 @app.websocket("/ws")
 async def ws(websoc: WebSocket):
