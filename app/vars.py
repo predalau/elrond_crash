@@ -39,3 +39,13 @@ DATABASE_MAP = {
         "status": [],
     },
 }
+REDIRECT_HTML = """
+<html>
+<head>
+    <meta http-equiv="refresh" content="0; URL='https://testcrash.vercel.app/'"/>
+</head>
+<body>
+    <p>You are being redirected to <a href="https://testcrash.vercel.app/">example.com</a>.</p>
+</body>
+</html>
+"""
