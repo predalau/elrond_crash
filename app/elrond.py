@@ -99,7 +99,7 @@ def send_rewards(sender: Account, adds: dict):
 
 
 async def confirm_transaction(txHash: str):
-    endpoint = "https://devnet-gateway.multiversx.com" + f"/transactions/{txHash}"
+    endpoint = "https://devnet-api.multiversx.com" + f"/transactions/{txHash}"
     while True:
         await asyncio.sleep(2)
         response = requests.get(endpoint)
@@ -108,5 +108,6 @@ async def confirm_transaction(txHash: str):
             status = response["status"]
             if status == "success":
                 return
+            # TODO handle when fail
         else:
             logger.debug(f"Bad request confirming endgame tx:\t{endpoint}")

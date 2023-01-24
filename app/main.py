@@ -29,6 +29,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+logging.getLogger("uvicorn").handlers.clear()
 
 
 async def run_game():
@@ -58,6 +59,7 @@ async def run_game():
 
             if game.runtime_index == -1:
                 await game.end_game()
+
 
 @app.on_event("startup")
 async def start_game():
