@@ -327,7 +327,7 @@ class GameHistory:
                 user_schema.update({col: user[col]})
 
         if usr_df.empty:
-            self.db.add_row("users_dev", tuple(user_schema.items()))
+            self.db.add_row("users_dev", tuple(user_schema.values()))
         else:
             self.db.update_user(user_schema)
 
