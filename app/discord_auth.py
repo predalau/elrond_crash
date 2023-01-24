@@ -1,10 +1,11 @@
 import requests
-#from vars import CLIENT_ID, CLIENT_SECRE
+
+# from vars import CLIENT_ID, CLIENT_SECRE
 
 API_ENDPOINT = 'https://discord.com/api'
 CLIENT_ID = '1042162577175756841'
 CLIENT_SECRET = 'wNgPZfb8NzvWVpVFIsgRhRJAxVRax7P9'
-REDIRECT_URI = 'https://testcrash.vercel.com/'
+REDIRECT_URI = 'https://squid-app-tkgbl.ondigitalocean.app/discordAuth'
 
 
 def exchange_code(code):
@@ -19,6 +20,7 @@ def exchange_code(code):
         'Content-Type': 'application/x-www-form-urlencoded'
     }
     r = requests.post('%s/oauth2/token' % API_ENDPOINT, data=data, headers=headers)
+    print(r.content)
     r.raise_for_status()
     return r.json()
 
@@ -49,3 +51,20 @@ def get_token():
     r = requests.post('%s/oauth2/token' % API_ENDPOINT, data=data, headers=headers, auth=(CLIENT_ID, CLIENT_SECRET))
     r.raise_for_status()
     return r.json()
+
+
+def get_user_data(token):
+    endpoint = "https://discord.com/api/v10/users/@me"
+    headers = {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        "Authorization": f"Bearer {token}",
+    }
+    req = requests.get(endpoint, headers=headers)
+    print(req.content)
+    req.raise_for_status()
+    print(req.json)
+
+
+def get_user_avatar(avt: str):
+    root = "https://cdn.discordapp.com/"
+    return root
