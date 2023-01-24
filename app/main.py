@@ -264,14 +264,21 @@ async def toggle_state():
 @app.get("/discordAuth", tags=["actions", "user"], response_class=HTMLResponse)
 async def authenticate_discord(code: str, state: str):
     from discord_auth import exchange_code, get_user_data
-    from vars import  REDIRECT_HTML
-    # logging("wallet is:\t", state)
-    token = exchange_code(code)["access_token"]
-    user = get_user_data(token)
-    # TODO check if he's in DB and act accordingly
-    print(user)
-    return REDIRECT_HTML
+    from vars import REDIRECT_HTML
 
+    global game
+    token = exchange_code(code)["access_token"]
+    user_discord = get_user_data(token)
+    user = {
+        "address": state,
+        "discord_id": user_discord["id"],
+        "discord_name": user_discord["username"],
+        "avatar_hash": user_discord["avatar"],
+    }
+
+    game.data.new_user(user)
+
+    return REDIRECT_HTML
 
 
 @app.post("/pauseGame", tags=["dev", "actions"])
