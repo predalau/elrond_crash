@@ -12,7 +12,7 @@ logger = logging.getLogger("fastapi")
 
 sc_gateway = ""
 if CHAIN_ID == "D":
-    sc_gateway = f"https://devnet-api.multiversx.com"
+    sc_gateway = f"https://devnet-api.elrond.com"
 elif CHAIN_ID == "T":
     sc_gateway = f"https://testnet-gateway.elrond.com"  # /address/{SC_ADDRESS}/keys"
 else:
