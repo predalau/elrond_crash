@@ -266,7 +266,7 @@ class Game:
         if self.data.game_history.empty:
             balance = STARTING_WALLET_AMT
         else:
-            req_url = f"https://devnet-gateway.elrond.com/address/{self.house_address}"
+            req_url = f"https://devnet-api.multiversx.com/address/{self.house_address}"
             req = get_http_request(req_url)
             req = json.loads(req.text)
             balance = float(req["data"]["account"]["balance"]) / 10 ** 18

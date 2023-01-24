@@ -6,16 +6,17 @@ from erdpy import config
 from vars import CHAIN_ID, SC_ADDRESS
 import asyncio
 import logging
+from fastapi import HTTPException
 
 logger = logging.getLogger("fastapi")
 
 sc_gateway = ""
 if CHAIN_ID == "D":
-    sc_gateway = f"https://devnet-gateway.elrond.com"
+    sc_gateway = f"https://devnet-api.multiversx.com"
 elif CHAIN_ID == "T":
     sc_gateway = f"https://testnet-gateway.elrond.com"  # /address/{SC_ADDRESS}/keys"
 else:
-    sc_gateway = f"https://gateway.elrond.com"  # address/{SC_ADDRESS}/keys"
+    sc_gateway = f"https://api.multiversx.com"  # address/{SC_ADDRESS}/keys"
 
 
 def get_proxy_and_account():
@@ -39,13 +40,17 @@ def get_all_bets():
     sc = sc_gateway + "/address/" + SC_ADDRESS + "/keys"
     bet_funds_hex = "bet_funds.mapped".encode().hex()
     next_bet_funds_hex = "next_bet_funds.mapped".encode().hex()
-    storage = requests.get(sc).json()["data"]["pairs"]
-    bet_funds = {
-        Address(key.replace(bet_funds_hex, "")).bech32(): int(value, 16) / pow(10, 18)
-        for key, value in storage.items()
-        if bet_funds_hex in key and next_bet_funds_hex not in key
-    }
-    return bet_funds
+    storage = requests.get(sc)
+    if storage.status_code == 200:
+        storage = storage.json()["data"]["pairs"]
+        bet_funds = {
+            Address(key.replace(bet_funds_hex, "")).bech32(): int(value, 16) / pow(10, 18)
+            for key, value in storage.items()
+            if bet_funds_hex in key and next_bet_funds_hex not in key
+        }
+        return bet_funds
+    else:
+        raise HTTPException(status_code=storage.status_code, detail=f"There was an error retreiving the active bets!\n{storage.content}")
 
 
 def get_all_rewards():
