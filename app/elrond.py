@@ -12,7 +12,7 @@ logger = logging.getLogger("fastapi")
 
 sc_gateway = ""
 if CHAIN_ID == "D":
-    sc_gateway = f"https://devnet-api.elrond.com"
+    sc_gateway = f"https://devnet-api.multiversx.com"
 elif CHAIN_ID == "T":
     sc_gateway = f"https://testnet-gateway.elrond.com"  # /address/{SC_ADDRESS}/keys"
 else:
@@ -37,10 +37,12 @@ def int_to_hex(number: int) -> str:
 
 
 def get_all_bets():
-    sc = sc_gateway + "/address/" + SC_ADDRESS + "/keys"
+    sc = sc_gateway + "/accounts/" + SC_ADDRESS + "/keys"
     bet_funds_hex = "bet_funds.mapped".encode().hex()
     next_bet_funds_hex = "next_bet_funds.mapped".encode().hex()
-    storage = requests.get(sc).json()["data"]["pairs"]
+    storage = requests.get(sc)
+    storage.raise_for_status()
+    storage = storage.json()["data"]["pairs"]
     bet_funds = {
         Address(key.replace(bet_funds_hex, "")).bech32(): int(value, 16) / pow(10, 18)
         for key, value in storage.items()
