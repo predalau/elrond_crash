@@ -263,11 +263,12 @@ async def toggle_state():
 
 @app.get("/discordAuth", tags=["actions", "user"])
 async def authenticate_discord(code: str, state: str):
-    from discord_auth import exchange_code
+    from discord_auth import exchange_code, get_user_data
     print("wallet is:\t", state)
-    discord_data = exchange_code(code)
+    token = exchange_code(code)["access_token"]
+    user = get_user_data(token)
     # TODO check if he's in DB and act accordingly
-    print(discord_data)
+    print(user)
 
 
 
