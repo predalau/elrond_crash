@@ -261,11 +261,11 @@ async def toggle_state():
         return "Fail"
 
 
-@app.post("/discordAuth", tags=["actions", "user"])
-async def authenticate_discord(data: Dict):
+@app.get("/discordAuth", tags=["actions", "user"])
+async def authenticate_discord(code: str, state: str):
     from discord_auth import exchange_code
-    print(data)
-    discord_data = exchange_code(data["code"])
+    print("wallet is:\t", state)
+    discord_data = exchange_code(code)
     # TODO check if he's in DB and act accordingly
     print(discord_data)
 
