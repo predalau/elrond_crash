@@ -62,7 +62,7 @@ def get_user_data(token):
     req = requests.get(endpoint, headers=headers)
     print(req.content)
     req.raise_for_status()
-    print(req.json)
+    return req.json()
 
 
 def get_user_avatar(avt: str):
