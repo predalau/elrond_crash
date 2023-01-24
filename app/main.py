@@ -29,8 +29,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-logging.getLogger("uvicorn").handlers.clear()
-
 
 async def run_game():
     global game
