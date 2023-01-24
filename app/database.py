@@ -177,6 +177,11 @@ class ElrondCrashDatabase:
         column = self.execute(sql)
         return column
 
+    def update_user(self, schema):
+        sql = f"""INSERT into users_dev {str(tuple(schema.keys()))} VALUES {str(tuple(schema.values()))}"""
+        column = self.execute(sql)
+        return column
+
 
 class GameHistory:
     """docstring for Elrond Crash Database"""
@@ -299,6 +304,32 @@ class GameHistory:
             parsed_bets.append(dic)
 
         return parsed_bets
+
+    def new_user(self, user: dict):
+        users_table = self.db.get_table("users_dev")
+        user_schema = {
+            "id": 1,
+            "timestamp": datetime.now(),
+            "address": "",
+            "discord_name": "",
+            "discord_id": 0,
+            "avatar_hash": "",
+            "exp": 0,
+            "raffle_tickets": 0,
+            "is_private": True,
+            "has_title": False,
+            "title": "",
+        }
+
+        usr_df = users_table[users_table["address"] == user["address"]]
+        for col in user.keys():
+            if col in user_schema.keys():
+                user_schema.update({col: user[col]})
+
+        if usr_df.empty:
+            self.db.add_row("users_dev", tuple(user_schema.items()))
+        else:
+            self.db.update_user(user_schema)
 
     def add_new_game(self, game):
         last_game_id = self.game_history.loc[-1].id
