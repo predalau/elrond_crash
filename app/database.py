@@ -309,7 +309,7 @@ class GameHistory:
         users_table = self.db.get_table("users_dev")
         user_schema = {
             "id": 1,
-            "timestamp": datetime.now(),
+            "timestamp": datetime.now().isoformat(),
             "address": "",
             "discord_name": "",
             "discord_id": 0,
