@@ -16,10 +16,10 @@ from objects import Game
 from schemas import BetSchema, Address
 from vars import BETTING_DELAY
 
-logging.basicConfig(level=logging.DEBUG, format='%(asctime)s %(levelname)s %(message)s')
 nest_asyncio.apply()
 
 app = FastAPI()
+
 game = Game()
 
 app.add_middleware(
