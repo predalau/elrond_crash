@@ -30,6 +30,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
 async def run_game():
     global game
     while True:
@@ -258,6 +259,16 @@ async def toggle_state():
         return "Success"
     else:
         return "Fail"
+
+
+@app.post("/discordAuth", tags=["actions", "user"])
+async def authenticate_discord(data: Dict):
+    from discord_auth import exchange_code
+    print(data)
+    discord_data = exchange_code(data["code"])
+    # TODO check if he's in DB and act accordingly
+    print(discord_data)
+
 
 
 @app.post("/pauseGame", tags=["dev", "actions"])

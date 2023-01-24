@@ -14,6 +14,8 @@ DB_PORT = int(os.getenv("DB_PORT"))
 DB_PASS = os.getenv("DB_PASS")
 DB_USER = os.getenv("DB_USER")
 REWARDS_WALLET = SC_ADDRESS = os.getenv("SC_ADDRESS")
+DISCORD_BOT_ID = os.getenv("DISCORD_BOT_ID")
+DISCORD_BOT_SECRET = os.getenv("DISCORD_BOT_SECRET")
 CHAIN_ID = "D"
 DATABASE_MAP = {
     "games": {
