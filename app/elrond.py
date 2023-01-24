@@ -12,7 +12,7 @@ logger = logging.getLogger("fastapi")
 
 sc_gateway = ""
 if CHAIN_ID == "D":
-    sc_gateway = f"https://devnet-api.multiversx.com"
+    sc_gateway = f"https://devnet-gateway.multiversx.com"
 elif CHAIN_ID == "T":
     sc_gateway = f"https://testnet-gateway.elrond.com"  # /address/{SC_ADDRESS}/keys"
 else:
@@ -37,7 +37,7 @@ def int_to_hex(number: int) -> str:
 
 
 def get_all_bets():
-    sc = sc_gateway + "/accounts/" + SC_ADDRESS + "/keys"
+    sc = sc_gateway + "/address/" + SC_ADDRESS + "/keys"
     bet_funds_hex = "bet_funds.mapped".encode().hex()
     next_bet_funds_hex = "next_bet_funds.mapped".encode().hex()
     storage = requests.get(sc)
@@ -99,7 +99,7 @@ def send_rewards(sender: Account, adds: dict):
 
 
 async def confirm_transaction(txHash: str):
-    endpoint = "https://devnet-api.elrond.com" + f"/transactions/{txHash}"
+    endpoint = "https://devnet-gateway.multiversx.com" + f"/transactions/{txHash}"
     while True:
         await asyncio.sleep(2)
         response = requests.get(endpoint)
