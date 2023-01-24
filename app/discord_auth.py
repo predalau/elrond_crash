@@ -1,8 +1,9 @@
 import requests
+#from vars import CLIENT_ID, CLIENT_SECRE
 
-API_ENDPOINT = 'https://discord.com/api/v10'
-CLIENT_ID = '1067457852580581467'
-CLIENT_SECRET = 'GKeH1ot1tHkhPHM3qBIFu1ZzzSdXkv0F'
+API_ENDPOINT = 'https://discord.com/api'
+CLIENT_ID = '1042162577175756841'
+CLIENT_SECRET = 'wNgPZfb8NzvWVpVFIsgRhRJAxVRax7P9'
 REDIRECT_URI = 'https://testcrash.vercel.com/'
 
 
