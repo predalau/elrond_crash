@@ -9,7 +9,7 @@ import nest_asyncio
 import psycopg2
 from fastapi import FastAPI, WebSocket, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-
+from fastapi.responses import HTMLResponse
 from elrond import get_all_bets
 from helpers import check_player_balance
 from objects import Game
@@ -261,7 +261,7 @@ async def toggle_state():
         return "Fail"
 
 
-@app.get("/discordAuth", tags=["actions", "user"])
+@app.get("/discordAuth", tags=["actions", "user"], response_class=HTMLResponse)
 async def authenticate_discord(code: str, state: str):
     from discord_auth import exchange_code, get_user_data
     from vars import  REDIRECT_HTML
