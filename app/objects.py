@@ -2,7 +2,7 @@ import json
 import random
 from app.helpers import get_http_request
 from database import GameHistory
-from vars import STARTING_WALLET_AMT, SALT_HASH, BETTING_STAGE_DURATION, REWARDS_WALLET
+from vars import game_logger, STARTING_WALLET_AMT, SALT_HASH, BETTING_STAGE_DURATION, REWARDS_WALLET
 from datetime import datetime, timedelta
 from elrond import send_rewards, get_proxy_and_account, confirm_transaction
 import hashlib
@@ -10,9 +10,7 @@ import hmac
 import pandas as pd
 import numpy as np
 import asyncio
-import logging
 
-logger = logging.getLogger("fastapi")
 
 class Bets:
     """docstring for Bet"""
@@ -186,7 +184,7 @@ class Game:
                 self.set_mult_array()
                 setattr(self, "has_players", True)
                 setattr(self, "forced_change", True)
-                logger.info(f"Multiplier changed from {old_mult} to {self.multiplier} due to NO active bets")
+                game_logger.info(f"Multiplier changed from {old_mult} to {self.multiplier} due to NO active bets")
 
         mult_now = self.multiplier_now
         player_potential_wins = 0
@@ -210,8 +208,8 @@ class Game:
             setattr(self, "runtime_index", i + 1)
 
         if player_potential_wins > 0.25 * (self.house_balance + total_bets):
-            logger.debug(f"Forced CRASH at multiplier:\t{self.multiplier_now}")
-            logger.debug(f"Player profits lost:\t{player_potential_wins} EGLD")
+            game_logger.debug(f"Forced CRASH at multiplier:\t{self.multiplier_now}")
+            game_logger.debug(f"Player profits lost:\t{player_potential_wins} EGLD")
             setattr(self, "multiplier", self.multiplier_now)
             setattr(self, "runtime_index", -1)
 
@@ -228,7 +226,7 @@ class Game:
         else:
             cdown = self.start_time - datetime.now()
             if hasattr(cdown, "days") and cdown.days == -1 and not self.start_game and self.state == "bet":
-                logger.debug("Change state from within countdown")
+                game_logger.debug("Change state from within countdown")
                 setattr(self, "start_game", True)
                 return "00:00"
 
@@ -251,9 +249,9 @@ class Game:
         elif curr_state == "play":
             setattr(self, "state", "end")
 
-        logger.info(f"Game state: \t{self.state}")
+        game_logger.info(f"Game state: \t{self.state}")
         bets = [bet.to_dict() for bet in self.bets.to_list]
-        logger.info(str(bets))
+        game_logger.info(str(bets))
 
     def _get_id(self):
         if self.data.game_history.empty:
@@ -268,12 +266,12 @@ class Game:
         else:
             req_url = f"https://devnet-api.multiversx.com/address/{self.house_address}"
             req = get_http_request(req_url)
+            req.raise_for_status()
             req = json.loads(req.text)
             balance = float(req["data"]["account"]["balance"]) / 10 ** 18
-        logger.info("New game initiated!")
-        logger.info(f"House balance is:\t{balance}")
-        logger.info(f"Game state:\t{self.state}")
-
+        game_logger.info("New game initiated!")
+        game_logger.info(f"House balance is:\t{balance}")
+        game_logger.info(f"Game state:\t{self.state}")
         return balance
 
     def cashout(self, wallet):
@@ -336,7 +334,7 @@ class Game:
         cdown = self.start_time - datetime.now()
 
         if hasattr(cdown, "days") and cdown.days == -1 and not self.start_game and self.state == "bet":
-            logger.debug("Change state from within countdown 2.0")
+            game_logger.debug("Change state from within countdown 2.0")
             setattr(self, "start_game", True)
 
         final = []
@@ -407,7 +405,7 @@ class Game:
         setattr(self, "house_balance", self.house_balance + house_profits)
 
         if manual:
-            logger.warning("MANUALLY crashed the game")
+            game_logger.warning("MANUALLY crashed the game")
 
         await asyncio.sleep(0.1)
         tx_hash = self.send_profits()
@@ -424,12 +422,12 @@ class Game:
                 return
 
     def save_game_history(self):
-        logger.info("Saving history: ")
+        game_logger.info("Saving history: ")
         self.data.db.add_row("games_2023", self.to_tuple())
 
     def save_bets_history(self):
         bets = self.bets.to_list_of_tuples(self.hash)
-        logger.info(f"Saving bets:\t{bets}")
+        game_logger.info(f"Saving bets:\t{bets}")
 
         for elem in bets:
             self.data.db.add_row("bets", elem)

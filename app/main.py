@@ -1,6 +1,5 @@
 import asyncio
 import json
-import logging
 import traceback
 from datetime import datetime
 from typing import Dict, List
@@ -14,7 +13,7 @@ from elrond import get_all_bets
 from helpers import check_player_balance
 from objects import Game
 from schemas import BetSchema, Address
-from vars import BETTING_DELAY
+from vars import BETTING_DELAY, game_logger
 
 nest_asyncio.apply()
 
@@ -64,11 +63,11 @@ async def run_game():
 async def start_game():
     try:
         asyncio.create_task(run_game())
-        logging.info("Game has been lauched successfully!")
+        game_logger.info("Game has been lauched successfully!")
     except Exception:
-        logging.exception(traceback.format_exc())
+        game_logger.exception(traceback.format_exc())
         asyncio.create_task(run_game())
-        logging.warning("Game has been restarted!")
+        game_logger.warning("Game has been restarted!")
 
 
 @app.websocket("/ws")
