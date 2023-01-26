@@ -3,16 +3,9 @@ from erdpy.accounts import Account, Address
 from erdpy.proxy import ElrondProxy
 from erdpy.transactions import Transaction  # , BunchOfTransactions
 from erdpy import config
-from vars import CHAIN_ID, SC_ADDRESS, LOGTAIL_ELROND_TOKEN
+from vars import CHAIN_ID, SC_ADDRESS
 import asyncio
 import logging
-from logtail import LogtailHandler
-
-elrond_handler = LogtailHandler(source_token=LOGTAIL_ELROND_TOKEN)
-elrond_logger = logging.getLogger(__name__)
-elrond_logger.handlers = []
-elrond_logger.setLevel(logging.INFO)
-elrond_logger.addHandler(elrond_handler)
 
 sc_gateway = ""
 if CHAIN_ID == "D":
@@ -98,7 +91,7 @@ def send_rewards(sender: Account, adds: dict):
     tx.version = config.get_tx_version()
     tx.sign(sender)
     sent_tx = tx.send(elrond_proxy)
-    elrond_logger.info(f"Endgame rewards transaction:\t{sent_tx}", extra=sent_tx)
+    logging.info(f"Endgame rewards transaction:\t{sent_tx}", extra=sent_tx)
     return sent_tx
 
 
@@ -114,4 +107,4 @@ async def confirm_transaction(txHash: str):
                 return
             # TODO handle when fail
         else:
-            elrond_logger.debug(f"Bad request confirming endgame tx:\t{endpoint}", extra=response.json())
+            logging.debug(f"Bad request confirming endgame tx:\t{endpoint}", extra=response.json())
