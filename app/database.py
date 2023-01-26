@@ -6,7 +6,6 @@ from vars import (
     DB_PORT,
     DB_USER,
     DB_PASS,
-    game_logger,
 )
 import psycopg2
 import pandas as pd
@@ -105,7 +104,7 @@ class ElrondCrashDatabase:
         sql = f"""INSERT INTO {table} VALUES {str(data)};"""
         self.cur.execute(sql)
         self.conn.commit()
-        game_logger.info(f"Adding row to '{table}':\t{data}")
+        logging.info(f"Adding row to '{table}':\t{data}")
 
     def remove_by(self, table, condition):
         """

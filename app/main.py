@@ -3,7 +3,7 @@ import json
 import traceback
 from datetime import datetime
 from typing import Dict, List
-
+import logging
 import nest_asyncio
 import psycopg2
 from fastapi import FastAPI, WebSocket, HTTPException
@@ -13,7 +13,7 @@ from elrond import get_all_bets
 from helpers import check_player_balance
 from objects import Game
 from schemas import BetSchema, Address
-from vars import BETTING_DELAY, game_logger
+from vars import BETTING_DELAY
 
 nest_asyncio.apply()
 
@@ -63,11 +63,11 @@ async def run_game():
 async def start_game():
     try:
         asyncio.create_task(run_game())
-        game_logger.info("Game has been lauched successfully!")
+        logging.info("Game has been lauched successfully!")
     except Exception:
-        game_logger.exception(traceback.format_exc())
+        logging.exception(traceback.format_exc())
         asyncio.create_task(run_game())
-        game_logger.warning("Game has been restarted!")
+        logging.warning("Game has been restarted!")
 
 
 @app.websocket("/ws")
