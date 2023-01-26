@@ -1,8 +1,9 @@
 from dotenv import load_dotenv
 import os
+from logtail import LogtailHandler
+import logging
 
 load_dotenv()
-
 DELAY = 0.025
 BETTING_DELAY = 5
 BETTING_STAGE_DURATION = 30
@@ -17,6 +18,15 @@ REWARDS_WALLET = SC_ADDRESS = os.getenv("SC_ADDRESS")
 DISCORD_BOT_ID = os.getenv("DISCORD_BOT_ID")
 DISCORD_BOT_SECRET = os.getenv("DISCORD_BOT_SECRET")
 CHAIN_ID = "D"
+LOGTAIL_GAME_TOKEN = os.getenv("LOGTAIL_GAME_TOKEN")
+LOGTAIL_ELROND_TOKEN = os.getenv("ELROND_GAME_TOKEN")
+
+game_handler = LogtailHandler(source_token=LOGTAIL_GAME_TOKEN)
+game_logger = logging.getLogger(__name__)
+game_logger.handlers = []
+game_logger.setLevel(logging.INFO)
+game_logger.addHandler(game_handler)
+
 DATABASE_MAP = {
     "games": {
         "identifier": [],

@@ -6,6 +6,7 @@ from vars import (
     DB_PORT,
     DB_USER,
     DB_PASS,
+    game_logger,
 )
 import psycopg2
 import pandas as pd
@@ -13,7 +14,6 @@ import warnings
 import logging
 
 warnings.filterwarnings("ignore", category=UserWarning, module="pandas")
-logger = logging.getLogger("fastapi")
 
 
 class ElrondCrashDatabase:
@@ -85,7 +85,8 @@ class ElrondCrashDatabase:
         Returns:
         list
         """
-        self.cur.execute(sql)
+        cur = self.conn.cursor()
+        cur.execute(sql)
         self.conn.commit()
         return self.cur.fetchall()
 
@@ -104,7 +105,7 @@ class ElrondCrashDatabase:
         sql = f"""INSERT INTO {table} VALUES {str(data)};"""
         self.cur.execute(sql)
         self.conn.commit()
-        logger.info(f"Adding row to '{table}':\t{data}")
+        game_logger.info(f"Adding row to '{table}':\t{data}")
 
     def remove_by(self, table, condition):
         """
@@ -178,7 +179,13 @@ class ElrondCrashDatabase:
         return column
 
     def update_user(self, schema):
-        sql = f"""INSERT into users_dev {str(tuple(schema.keys()))} VALUES {str(tuple(schema.values()))}"""
+        set_str = ""
+        immutable_cols = ["address", "discord_id",]
+        for col, val in schema.items():
+            if col not in immutable_cols:
+                set_str = set_str + "\"" + col + "\"=" + str(val) + ", "
+        sql = f"""UPDATE users_dev SET {set_str[:-2]} WHERE "address"='{schema["address"]}';""".encode("utf-8")
+        print(sql)
         column = self.execute(sql)
         return column
 
@@ -192,6 +199,7 @@ class GameHistory:
         self.db = ElrondCrashDatabase()
         self.game_history = self._import_game_history()
         self.bet_history = self._import_bet_history()
+        self.user_table = self._import_user_history()
         self.last_ten_multipliers = self.get_last_multipliers()
 
     def _import_game_history(self):
@@ -200,7 +208,10 @@ class GameHistory:
 
     def _import_bet_history(self):
         df = self.db.get_table("bets")
+        return df
 
+    def _import_user_history(self):
+        df = self.db.get_table("users_dev")
         return df
 
     def get_weekly_leaderboard(self):
@@ -306,7 +317,8 @@ class GameHistory:
         return parsed_bets
 
     def new_user(self, user: dict):
-        users_table = self.db.get_table("users_dev")
+        users_table = self.user_table
+        assert "address" in user.keys()
         user_schema = {
             "id": 1,
             "timestamp": datetime.now().isoformat(),
