@@ -29,6 +29,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+logger = logging.getLogger("fastapi")
+logger.setLevel(logging.DEBUG)
 
 async def run_game():
     global game
@@ -63,11 +65,11 @@ async def run_game():
 async def start_game():
     try:
         asyncio.create_task(run_game())
-        logging.info("Game has been lauched successfully!")
+        logger.info("Game has been lauched successfully!")
     except Exception:
-        logging.exception(traceback.format_exc())
+        logger.exception(traceback.format_exc())
         asyncio.create_task(run_game())
-        logging.warning("Game has been restarted!")
+        logger.warning("Game has been restarted!")
 
 
 @app.websocket("/ws")
@@ -187,7 +189,6 @@ async def get_last_ten_bets(data):
 async def check_balance(
         wallet_address: str,
         balance: float,
-        signer: str,
 ) -> bool:
     # user = UserSchema(walletAddress=walletAddress, balance=balance, signer=signer)
     payload = {"status": check_player_balance(wallet_address, balance)}

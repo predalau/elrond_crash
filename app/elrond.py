@@ -7,6 +7,10 @@ from vars import CHAIN_ID, SC_ADDRESS
 import asyncio
 import logging
 
+logger = logging.getLogger("fastapi")
+logger.setLevel(logging.DEBUG)
+
+
 sc_gateway = ""
 if CHAIN_ID == "D":
     sc_gateway = f"https://devnet-gateway.multiversx.com"
@@ -107,4 +111,4 @@ async def confirm_transaction(txHash: str):
                 return
             # TODO handle when fail
         else:
-            logging.debug(f"Bad request confirming endgame tx:\t{endpoint}", extra=response.json())
+            logger.debug(f"Bad request confirming endgame tx:\t{endpoint}", extra=response.json())
