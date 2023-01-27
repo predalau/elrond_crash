@@ -135,7 +135,7 @@ async def get_user_profile(walletAddress: str, interval=1) -> Dict:
     Get current bets from the SC
     """
     global game
-    user_profile = game.data.get_user_profile(address=walletAddress, interval)
+    user_profile = game.data.get_user_profile(walletAddress, interval=interval)
 
     return user_profile
 
