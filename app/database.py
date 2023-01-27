@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 from vars import (
     DATABASE_PATH,
     DATABASE_MAP,
@@ -11,7 +11,6 @@ import psycopg2
 import pandas as pd
 import warnings
 import logging
-
 
 logger = logging.getLogger("fastapi")
 logger.setLevel(logging.DEBUG)
@@ -90,7 +89,7 @@ class ElrondCrashDatabase:
         cur = self.conn.cursor()
         cur.execute(sql)
         self.conn.commit()
-        return self.cur.fetchall()
+        return
 
     def add_row(self, table, data):
         """
@@ -182,14 +181,18 @@ class ElrondCrashDatabase:
 
     def update_user(self, schema):
         set_str = ""
-        immutable_cols = ["address", "discord_id",]
+        immutable_cols = ["address", "discord_id"]
         for col, val in schema.items():
             if col not in immutable_cols:
-                set_str = set_str + "\"" + col + "\"=" + str(val) + ", "
-        sql = f"""UPDATE users_dev SET {set_str[:-2]} WHERE "address"='{schema["address"]}';""".encode("utf-8")
+                if type(val) == str:
+                    set_str = set_str + col + "='" + str(val) + "', "
+                else:
+                    set_str = set_str + col + "=" + str(val) + ", "
+
+        sql = f"""UPDATE users_dev SET {set_str[:-2]} WHERE address='{schema["address"]}';"""
         print(sql)
-        column = self.execute(sql)
-        return column
+        self.execute(sql)
+        return
 
 
 class GameHistory:
@@ -239,6 +242,29 @@ class GameHistory:
             final_list.append(elem.to_json())
 
         return final_list
+
+    def get_user_profile(self, address, interval=1):
+        from_ts = datetime.now() - timedelta(days=interval)
+        from_ts = from_ts.date()
+        user_df = self.user_table[self.user_table["address"] == address]
+        user_data = user_df[["discord_name", "avatar_hash", "exp", "raffle_tickets", "title"]].iloc[0].to_dict()
+        print(user_data)
+        user_bets = self.bet_history.loc[(self.bet_history["address"] == address) & (self.bet_history["timestamp"] > from_ts)]
+
+        if user_bets.empty:
+            final = {"address": address, "top_win": 0, "total_games": 0}
+        else:
+            top_win = user_bets["profit"].max()
+            tot_games = user_bets.shape[0]
+            final = {"address": address, "top_win": top_win, "total_games": tot_games}
+
+        if user_df.empty:
+            return final
+        else:
+            final.update(user_data)
+
+        final.update({"interval_in_days": interval})
+        return final
 
     def get_player_weekly_stats(self, addr: str) -> dict:
         sql_query = f"select * from bets where address='{addr}' and timestamp >= date_trunc('week', current_date) - interval '1 week'"

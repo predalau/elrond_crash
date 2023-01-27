@@ -125,6 +125,20 @@ async def get_current_bets() -> List[BetSchema]:
 
     return bets
 
+@app.get(
+    "/userProfile",
+    tags=["bets"],
+    response_model=Dict,
+)
+async def get_user_profile(walletAddress: str) -> Dict:
+    """
+    Get current bets from the SC
+    """
+    global game
+    user_profile = game.data.get_user_profile(address=walletAddress)
+
+    return user_profile
+
 
 @app.get(
     "/lastBets",
