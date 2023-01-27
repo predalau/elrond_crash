@@ -130,12 +130,12 @@ async def get_current_bets() -> List[BetSchema]:
     tags=["bets"],
     response_model=Dict,
 )
-async def get_user_profile(walletAddress: str) -> Dict:
+async def get_user_profile(walletAddress: str, interval=1) -> Dict:
     """
     Get current bets from the SC
     """
     global game
-    user_profile = game.data.get_user_profile(address=walletAddress)
+    user_profile = game.data.get_user_profile(address=walletAddress, interval)
 
     return user_profile
 
