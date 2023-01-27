@@ -12,6 +12,9 @@ import pandas as pd
 import warnings
 import logging
 
+
+logger = logging.getLogger("fastapi")
+logger.setLevel(logging.DEBUG)
 warnings.filterwarnings("ignore", category=UserWarning, module="pandas")
 
 
@@ -104,7 +107,7 @@ class ElrondCrashDatabase:
         sql = f"""INSERT INTO {table} VALUES {str(data)};"""
         self.cur.execute(sql)
         self.conn.commit()
-        logging.info(f"Adding row to '{table}':\t{data}")
+        logger.info(f"Adding row to '{table}':\t{data}")
 
     def remove_by(self, table, condition):
         """
