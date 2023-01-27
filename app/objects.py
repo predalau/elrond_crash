@@ -1,6 +1,8 @@
 import json
 import random
 import logging
+import traceback
+
 from app.helpers import get_http_request
 from database import GameHistory
 from vars import STARTING_WALLET_AMT, SALT_HASH, BETTING_STAGE_DURATION, REWARDS_WALLET
@@ -266,18 +268,23 @@ class Game:
         return gameid
 
     def get_house_balance(self):
-        if self.data.game_history.empty:
-            balance = STARTING_WALLET_AMT
-        else:
-            req_url = f"https://devnet-api.multiversx.com/address/{self.house_address}"
-            req = get_http_request(req_url)
-            req.raise_for_status()
-            req = json.loads(req.text)
-            balance = float(req["data"]["account"]["balance"]) / 10 ** 18
-        logger.info("New game initiated!")
-        logger.info(f"House balance is:\t{balance}")
-        logger.info(f"Game state:\t{self.state}")
-        return balance
+        try:
+            if self.data.game_history.empty:
+                balance = STARTING_WALLET_AMT
+            else:
+                req_url = f"https://devnet-api.multiversx.com/address/{self.house_address}"
+                req = get_http_request(req_url)
+                req.raise_for_status()
+                req = json.loads(req.text)
+                balance = float(req["data"]["account"]["balance"]) / 10 ** 18
+            logger.info("New game initiated!")
+            logger.info(f"House balance is:\t{balance}")
+            logger.info(f"Game state:\t{self.state}")
+            return balance
+        except Exception:
+            balance = self.data.game_history["house_balance"].iloc[-1:, :].values[0]
+            traceback.print_exc()
+            return balance
 
     def cashout(self, wallet):
         for bet in self.bets.to_list:
