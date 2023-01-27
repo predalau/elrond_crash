@@ -32,6 +32,7 @@ app.add_middleware(
 logger = logging.getLogger("fastapi")
 logger.setLevel(logging.DEBUG)
 
+
 async def run_game():
     global game
     while True:
@@ -125,18 +126,20 @@ async def get_current_bets() -> List[BetSchema]:
 
     return bets
 
+
 @app.get(
     "/userProfile",
     tags=["bets"],
     response_model=Dict,
 )
-async def get_user_profile(walletAddress: str, interval=1) -> Dict:
+async def get_user_profile(walletAddress: str, interval: int = 1) -> Dict:
     """
     Get current bets from the SC
     """
+
+
     global game
     user_profile = game.data.get_user_profile(walletAddress, interval=interval)
-
     return user_profile
 
 
