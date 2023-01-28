@@ -91,14 +91,12 @@ def send_rewards(sender: Account, adds: dict):
     tx.data = "multiplyFunds"
     for address, multiplier in adds.items():
         mult_str = int(str(round(multiplier, 2)).replace(".", ""))
-        print(mult_str)
         mult_str = int_to_hex(mult_str)
         tx.data += "@" + Address(address).hex() + "@" + mult_str
     tx.gasLimit = (len(adds.keys()) + 1) * 6000000
     tx.version = config.get_tx_version()
     tx.sign(sender)
     sent_tx = tx.send(elrond_proxy)
-    print(sent_tx)
     logging.info(f"Endgame rewards transaction:\t{sent_tx}", extra=sent_tx)
     return sent_tx
 
