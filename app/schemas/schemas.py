@@ -9,7 +9,7 @@ class Bet(BaseModel):
     betAmount: float = Field(None, title="Bet Amount in EGLD")
 
 
-class Address(BaseModel):
+class CashoutAddress(BaseModel):
     walletAddress: str = Field(None, title=erd_address_format)
 
 
