@@ -4,6 +4,8 @@ import traceback
 from datetime import datetime
 from typing import Dict, List
 import logging
+
+import erdpy.errors
 import nest_asyncio
 import psycopg2
 from fastapi import FastAPI, WebSocket, HTTPException
@@ -12,8 +14,9 @@ from fastapi.responses import HTMLResponse
 from elrond import get_all_bets
 from helpers import check_player_balance
 from objects import Game
-from schemas import BetSchema, Address
+from schemas import BetSchema, CashoutAddress
 from vars import BETTING_DELAY
+from erdpy.accounts import Address
 
 nest_asyncio.apply()
 
@@ -136,10 +139,13 @@ async def get_user_profile(walletAddress: str, interval: int = 1) -> Dict:
     """
     Get current bets from the SC
     """
-
+    try:
+        address = Address(walletAddress)
+    except erdpy.errors.BadAddressFormatError:
+        raise HTTPException(status_code=422, detail="Bad Address Format")
 
     global game
-    user_profile = game.data.get_user_profile(walletAddress, interval=interval)
+    user_profile = game.data.get_user_profile(address.bech32(), interval=interval)
     return user_profile
 
 
@@ -187,7 +193,11 @@ async def get_latest_games():
 )
 async def get_player_stats(address: str):
     global game
-    latest_games = game.data.get_player_weekly_stats(address)
+    try:
+        address = Address(address)
+    except erdpy.errors.BadAddressFormatError:
+        raise HTTPException(status_code=422, detail="Bad Address Format")
+    latest_games = game.data.get_player_weekly_stats(address.bech32())
     return latest_games
 
 
@@ -198,7 +208,12 @@ async def get_player_stats(address: str):
 )
 async def get_last_ten_bets(data):
     global game
-    bets = game.data.get_user_last_bets(data.walletAddress)
+    try:
+        address = Address(data.walletAddress)
+    except erdpy.errors.BadAddressFormatError:
+        raise HTTPException(status_code=422, detail="Bad Address Format")
+
+    bets = game.data.get_user_last_bets(address.bech32())
     return bets
 
 
@@ -207,8 +222,13 @@ async def check_balance(
         wallet_address: str,
         balance: float,
 ) -> bool:
+    try:
+        address = Address(data.walletAddress)
+    except erdpy.errors.BadAddressFormatError:
+        raise HTTPException(status_code=422, detail="Bad Address Format")
+
     # user = UserSchema(walletAddress=walletAddress, balance=balance, signer=signer)
-    payload = {"status": check_player_balance(wallet_address, balance)}
+    payload = {"status": check_player_balance(address.bech32(), balance)}
     return payload["status"]
 
 
@@ -226,7 +246,7 @@ async def weekly_leaderboard():
 
 
 @app.post("/cashout", tags=["bets", "actions"])
-async def cashout(data: Address):
+async def cashout(data: CashoutAddress):
     global game
     print(data)
     if game.state in ["bet", "end"]:
