@@ -259,7 +259,7 @@ class GameHistory:
         if user_df.empty:
             return final
         else:
-            user_data = user_df[["discord_name", "avatar_hash", "exp", "raffle_tickets", "title"]].iloc[0].to_dict()
+            user_data = user_df[["discord_name", "discord_id", "avatar_hash", "exp", "raffle_tickets", "title"]].iloc[0].to_dict()
             print(user_data)
             final.update(user_data)
 
