@@ -111,8 +111,8 @@ async def ws(websoc: WebSocket):
                 "afterCrash": game.afterCrash,
             }
             await websoc.send_json(payload)
-    except Exception as e:
-        print(str(e))
+    except Exception:
+        traceback.print_exc()
 
 
 @app.get(
@@ -195,7 +195,7 @@ async def get_player_stats(address: str):
     global game
     try:
         address = Address(address)
-    except erdpy.errors.BadAddressFormatError:
+    except (erdpy.errors.BadAddressFormatError, erdpy.errors.EmptyAddressError):
         raise HTTPException(status_code=422, detail="Bad Address Format")
     latest_games = game.data.get_player_weekly_stats(address.bech32())
     return latest_games
@@ -210,7 +210,7 @@ async def get_last_ten_bets(data):
     global game
     try:
         address = Address(data.walletAddress)
-    except erdpy.errors.BadAddressFormatError:
+    except (erdpy.errors.BadAddressFormatError, erdpy.errors.EmptyAddressError):
         raise HTTPException(status_code=422, detail="Bad Address Format")
 
     bets = game.data.get_user_last_bets(address.bech32())
@@ -224,7 +224,7 @@ async def check_balance(
 ) -> bool:
     try:
         address = Address(data.walletAddress)
-    except erdpy.errors.BadAddressFormatError:
+    except (erdpy.errors.BadAddressFormatError, erdpy.errors.EmptyAddressError):
         raise HTTPException(status_code=422, detail="Bad Address Format")
 
     # user = UserSchema(walletAddress=walletAddress, balance=balance, signer=signer)
