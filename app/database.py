@@ -247,7 +247,6 @@ class GameHistory:
         from_ts = datetime.now() - timedelta(days=interval)
         from_ts = from_ts.date()
         user_df = self.user_table[self.user_table["address"] == address]
-        print(user_df.to_string())
         user_bets = self.bet_history.loc[
             (self.bet_history["address"] == address) & (self.bet_history["timestamp"] > from_ts)
             ]
@@ -271,7 +270,9 @@ class GameHistory:
                     "raffle_tickets",
                     "title",
                 ]
-            ].iloc[0].to_dict()
+            ].iloc[0]
+            user_data["discord_id"] = user_data["discord_id"].astype(str)
+            user_data = user_data.to_dict()
             print(user_data)
             final.update(user_data)
 
