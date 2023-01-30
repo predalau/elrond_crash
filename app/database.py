@@ -247,7 +247,10 @@ class GameHistory:
         from_ts = datetime.now() - timedelta(days=interval)
         from_ts = from_ts.date()
         user_df = self.user_table[self.user_table["address"] == address]
-        user_bets = self.bet_history.loc[(self.bet_history["address"] == address) & (self.bet_history["timestamp"] > from_ts)]
+        print(user_df.to_string())
+        user_bets = self.bet_history.loc[
+            (self.bet_history["address"] == address) & (self.bet_history["timestamp"] > from_ts)
+            ]
 
         if user_bets.empty:
             final = {"address": address, "top_win": 0, "total_games": 0}
@@ -259,7 +262,16 @@ class GameHistory:
         if user_df.empty:
             return final
         else:
-            user_data = user_df[["discord_name", "discord_id", "avatar_hash", "exp", "raffle_tickets", "title"]].iloc[0].to_dict()
+            user_data = user_df[
+                [
+                    "discord_name",
+                    "discord_id",
+                    "avatar_hash",
+                    "exp",
+                    "raffle_tickets",
+                    "title",
+                ]
+            ].iloc[0].to_dict()
             print(user_data)
             final.update(user_data)
 

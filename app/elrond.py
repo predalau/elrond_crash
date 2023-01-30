@@ -90,7 +90,7 @@ def send_rewards(sender: Account, adds: dict):
     tx.chainID = CHAIN_ID
     tx.data = "multiplyFunds"
     for address, multiplier in adds.items():
-        mult_str = int(str(round(multiplier, 2)).replace(".", ""))
+        mult_str = int(f"{round(multiplier, 2):.2f}".replace(".", ""))
         mult_str = int_to_hex(mult_str)
         tx.data += "@" + Address(address).hex() + "@" + mult_str
     tx.gasLimit = (len(adds.keys()) + 1) * 6000000
