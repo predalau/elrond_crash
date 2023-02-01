@@ -5,7 +5,7 @@ import traceback
 
 from app.helpers import get_http_request
 from database import GameHistory
-from vars import STARTING_WALLET_AMT, SALT_HASH, BETTING_STAGE_DURATION, REWARDS_WALLET
+from vars import STARTING_WALLET_AMT, SALT_HASH, BETTING_STAGE_DURATION, REWARDS_WALLET, ELROND_API
 from datetime import datetime, timedelta
 from elrond import send_rewards, get_proxy_and_account, confirm_transaction
 import hashlib
@@ -232,9 +232,7 @@ class Game:
             return "00:00"
         else:
             cdown = self.start_time - datetime.now()
-            if hasattr(cdown, "days") and cdown.days == -1 and not self.start_game and self.state == "bet":
-                logger.debug("Change state from within countdown")
-                setattr(self, "start_game", True)
+            if datetime.now() > self.start_time:
                 return "00:00"
 
             s = str(cdown)
@@ -272,7 +270,7 @@ class Game:
             if self.data.game_history.empty:
                 balance = STARTING_WALLET_AMT
             else:
-                req_url = f"https://devnet-api.multiversx.com/address/{self.house_address}"
+                req_url = ELROND_API + f"/address/{self.house_address}"
                 req = get_http_request(req_url)
                 req.raise_for_status()
                 req = json.loads(req.text)
@@ -342,13 +340,6 @@ class Game:
     def get_current_bets(self):
         if len(self.bets.to_list) == 0:
             return []
-
-        cdown = self.start_time - datetime.now()
-
-        if hasattr(cdown, "days") and cdown.days == -1 and not self.start_game and self.state == "bet":
-            logger.debug("Change state from within countdown 2.0")
-            setattr(self, "start_game", True)
-
         final = []
         for bet in self.bets.to_list:
             if bet.state == "open":

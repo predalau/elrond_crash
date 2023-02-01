@@ -3,7 +3,7 @@ from erdpy.accounts import Account, Address
 from erdpy.proxy import ElrondProxy
 from erdpy.transactions import Transaction  # , BunchOfTransactions
 from erdpy import config
-from vars import CHAIN_ID, SC_ADDRESS
+from vars import CHAIN_ID, SC_ADDRESS, ELROND_GATEWAY, ELROND_API
 import asyncio
 import logging
 
@@ -21,7 +21,7 @@ else:
 
 
 def get_proxy_and_account():
-    proxy = ElrondProxy(sc_gateway)
+    proxy = ElrondProxy(ELROND_GATEWAY)
     account = Account(pem_file="wallet.pem")
     account.sync_nonce(proxy)
     return proxy, account
@@ -38,7 +38,7 @@ def int_to_hex(number: int) -> str:
 
 
 def get_all_bets():
-    sc = sc_gateway + "/address/" + SC_ADDRESS + "/keys"
+    sc = ELROND_GATEWAY + "/address/" + SC_ADDRESS + "/keys"
     bet_funds_hex = "bet_funds.mapped".encode().hex()
     next_bet_funds_hex = "next_bet_funds.mapped".encode().hex()
     storage = requests.get(sc)
@@ -53,7 +53,7 @@ def get_all_bets():
 
 
 def get_all_rewards():
-    sc = sc_gateway + "/address/" + SC_ADDRESS + "/keys"
+    sc = ELROND_GATEWAY + "/address/" + SC_ADDRESS + "/keys"
     reward_funds_hex = "reward_funds.mapped".encode().hex()
     storage = requests.get(sc).json()["data"]["pairs"]
     reward_funds = {
@@ -102,7 +102,7 @@ def send_rewards(sender: Account, adds: dict):
 
 
 async def confirm_transaction(txHash: str):
-    endpoint = "https://devnet-api.multiversx.com" + f"/transactions/{txHash}"
+    endpoint = ELROND_API + f"/transactions/{txHash}"
     while True:
         await asyncio.sleep(2)
         response = requests.get(endpoint)
@@ -111,6 +111,5 @@ async def confirm_transaction(txHash: str):
             status = response["status"]
             if status == "success":
                 return
-            # TODO handle when fail
         else:
             logger.debug(f"Bad request confirming endgame tx:\t{endpoint}", extra=response.json())
