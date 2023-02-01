@@ -8,6 +8,7 @@ import logging
 import erdpy.errors
 import nest_asyncio
 import psycopg2
+import websockets.exceptions
 from fastapi import FastAPI, WebSocket, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
@@ -47,10 +48,12 @@ async def run_game():
             if game.afterCrash == "notCrash":
                 setattr(game, "afterCrash", "crash")
 
-            if datetime.now() > game.start_time or game.start_game:
+            new_bets = get_all_bets()
+
+            if datetime.now() > game.start_time:
+                game.bets.update(new_bets)
                 game.toggle_state()
             else:
-                new_bets = get_all_bets()
                 if new_bets and not game.has_players:
                     setattr(game, "has_players", True)
 
@@ -111,6 +114,8 @@ async def ws(websoc: WebSocket):
                 "afterCrash": game.afterCrash,
             }
             await websoc.send_json(payload)
+    except websockets.exceptions.ConnectionClosedOK:
+        print("connection closed OK")
     except Exception:
         traceback.print_exc()
 
@@ -141,11 +146,11 @@ async def get_user_profile(walletAddress: str, interval: int = 1) -> Dict:
     """
     try:
         address = Address(walletAddress)
-    except erdpy.errors.BadAddressFormatError:
+        global game
+        user_profile = game.data.get_user_profile(address.bech32(), interval=interval)
+    except (erdpy.errors.BadAddressFormatError, erdpy.errors.EmptyAddressError):
         raise HTTPException(status_code=422, detail="Bad Address Format")
 
-    global game
-    user_profile = game.data.get_user_profile(address.bech32(), interval=interval)
     return user_profile
 
 

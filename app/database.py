@@ -6,6 +6,9 @@ from vars import (
     DB_PORT,
     DB_USER,
     DB_PASS,
+    GAMES_TABLE_NAME,
+    BETS_TABLE_NAME,
+    USERS_TABLE_NAME,
 )
 import psycopg2
 import pandas as pd
@@ -89,7 +92,7 @@ class ElrondCrashDatabase:
         cur = self.conn.cursor()
         cur.execute(sql)
         self.conn.commit()
-        return
+        return cur.fetchall()
 
     def add_row(self, table, data):
         """
@@ -192,8 +195,6 @@ class ElrondCrashDatabase:
         sql = f"""UPDATE users_dev SET {set_str[:-2]} WHERE address='{schema["address"]}';"""
         print(sql)
         self.execute(sql)
-        return
-
 
 class GameHistory:
     """docstring for Elrond Crash Database"""
@@ -208,15 +209,15 @@ class GameHistory:
         self.last_ten_multipliers = self.get_last_multipliers()
 
     def _import_game_history(self):
-        df = self.db.get_table("games_2023")
+        df = self.db.get_table(GAMES_TABLE_NAME)
         return df
 
     def _import_bet_history(self):
-        df = self.db.get_table("bets")
+        df = self.db.get_table(BETS_TABLE_NAME)
         return df
 
     def _import_user_history(self):
-        df = self.db.get_table("users_dev")
+        df = self.db.get_table(USERS_TABLE_NAME)
         return df
 
     def get_weekly_leaderboard(self):

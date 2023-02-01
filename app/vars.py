@@ -50,7 +50,17 @@ REDIRECT_HTML = """
 </html>
 """
 
-CHAIN_ID = "D"
-
-
-
+if ENV == "prod":
+    GAMES_TABLE_NAME = "games_2023"
+    BETS_TABLE_NAME = "bets"
+    USERS_TABLE_NAME = "users_dev"
+    CHAIN_ID = "D"
+    ELROND_API = 'https://devnet-api.multiversx.com'
+    ELROND_GATEWAY = 'https://devnet-gateway.multiversx.com'
+else:
+    GAMES_TABLE_NAME = "games_2023"
+    BETS_TABLE_NAME = "bets"
+    USERS_TABLE_NAME = "users_dev"
+    CHAIN_ID = "D"
+    ELROND_API = 'https://devnet-api.multiversx.com'
+    ELROND_GATEWAY = 'https://devnet-gateway.multiversx.com'
