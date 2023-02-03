@@ -14,7 +14,6 @@ import pandas as pd
 import numpy as np
 import asyncio
 
-
 logger = logging.getLogger("fastapi")
 logger.setLevel(logging.DEBUG)
 
@@ -410,10 +409,13 @@ class Game:
         if manual:
             logger.warning("MANUALLY crashed the game")
 
-        await asyncio.sleep(0.1)
         tx_hash = self.send_profits()
         await self.confirm_5_seconds()
-        await confirm_transaction(tx_hash)
+        while not await confirm_transaction(tx_hash):
+            logger.info(f"Tx: {tx_hash} Failed to be confirmed. Retrying...")
+            tx_hash = self.send_profits()
+            logger.info(f"New Tx: {tx_hash}")
+
         self.save_game_history()
         self.save_bets_history()
         self.__init__()

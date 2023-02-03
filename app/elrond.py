@@ -1,4 +1,5 @@
 import requests
+from fastapi.exceptions import HTTPException
 from erdpy.accounts import Account, Address
 from erdpy.proxy import ElrondProxy
 from erdpy.transactions import Transaction  # , BunchOfTransactions
@@ -42,8 +43,13 @@ def get_all_bets():
     bet_funds_hex = "bet_funds.mapped".encode().hex()
     next_bet_funds_hex = "next_bet_funds.mapped".encode().hex()
     storage = requests.get(sc)
-    storage.raise_for_status()
-    storage = storage.json()["data"]["pairs"]
+
+    try:
+        storage.raise_for_status()
+        storage = storage.json()["data"]["pairs"]
+    except HTTPException:
+        print("Bad request:\t", storage.content)
+
     bet_funds = {
         Address(key.replace(bet_funds_hex, "")).bech32(): int(value, 16) / pow(10, 18)
         for key, value in storage.items()
@@ -109,7 +115,12 @@ async def confirm_transaction(txHash: str):
         if response.status_code == 200:
             response = response.json()
             status = response["status"]
-            if status == "success":
-                return
+            if status == "pending":
+                continue
+            elif status == "success":
+                return True
+            else:
+                print(response.json())
+                return False
         else:
-            logger.debug(f"Bad request confirming endgame tx:\t{endpoint}", extra=response.json())
+            logger.info(f"Bad request confirming endgame tx:\t{endpoint}", extra=response.json())
