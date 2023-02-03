@@ -114,11 +114,12 @@ async def ws(websoc: WebSocket):
                 "afterCrash": game.afterCrash,
             }
             await websoc.send_json(payload)
-    except websockets.exceptions.ConnectionClosedOK:
+    except (websockets.exceptions.ConnectionClosedOK, websockets.exceptions.ConnectionClosed):
         print("connection closed OK")
-    except Exception:
-        traceback.print_exc()
-
+    except websockets.exceptions.ConnectionClosedError:
+        print("Connection closed error")
+    finally:
+        await websoc.close()
 
 @app.get(
     "/currentBets",
