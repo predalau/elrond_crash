@@ -8,4 +8,6 @@ if __name__ == "__main__":
         reload=True,
         ws_ping_interval=None,
         ws_ping_timeout=None,
+        debug=True,
+        ws="websockets"
     )
