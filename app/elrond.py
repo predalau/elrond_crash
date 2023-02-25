@@ -11,7 +11,6 @@ import logging
 logger = logging.getLogger("fastapi")
 logger.setLevel(logging.DEBUG)
 
-
 sc_gateway = ""
 if CHAIN_ID == "D":
     sc_gateway = f"https://devnet-gateway.multiversx.com"
@@ -110,17 +109,18 @@ def send_rewards(sender: Account, adds: dict):
 async def confirm_transaction(txHash: str):
     endpoint = ELROND_API + f"/transactions/{txHash}"
     while True:
-        await asyncio.sleep(2)
         response = requests.get(endpoint)
         if response.status_code == 200:
             response = response.json()
             status = response["status"]
             if status == "pending":
+                await asyncio.sleep(2)
                 continue
             elif status == "success":
                 return True
             else:
                 print(response.json())
                 return False
+
         else:
             logger.info(f"Bad request confirming endgame tx:\t{endpoint}", extra=response.json())

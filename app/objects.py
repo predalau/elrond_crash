@@ -252,6 +252,8 @@ class Game:
             setattr(self, "state", "play")
         elif curr_state == "play":
             setattr(self, "state", "end")
+        elif curr_state == "end":
+            self.__init__()
 
         logger.info(f"Game state: \t{self.state}")
         bets = [bet.to_dict() for bet in self.bets.to_list]
@@ -377,18 +379,17 @@ class Game:
         return tx_hash
 
     async def confirm_5_seconds(self):
-        assert hasattr(self, "not_crash_timestamp")
+        trigger = datetime.now() + timedelta(seconds=5)
 
-        while True:
+        while datetime.now() < trigger:
             await asyncio.sleep(1)
-            if datetime.now() > self.not_crash_timestamp:
-                setattr(self, "afterCrash", "notCrash")
-                return True
+
+        setattr(self, "afterCrash", "notCrash")
+        return True
 
     async def end_game(self, manual=False):
         self.toggle_state()
         setattr(self, "afterCrash", "crash")
-        setattr(self, "not_crash_timestamp", datetime.now() + timedelta(seconds=5))
         pool_size = 0
         player_profits = 0
 
